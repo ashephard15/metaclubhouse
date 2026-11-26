@@ -234,4 +234,102 @@ export function pedestal(color: number, h = 0.8, w = 0.5, glass = false): THREE.
   return g;
 }
 
+// ---------- Tree stump (Tree House stands) ----------
+let barkTex: THREE.CanvasTexture | null = null;
+let ringsTex: THREE.CanvasTexture | null = null;
+
+function makeBark(): THREE.CanvasTexture {
+  const c = document.createElement('canvas');
+  c.width = 512; c.height = 256;
+  const ctx = c.getContext('2d')!;
+  ctx.fillStyle = '#7a5232';
+  ctx.fillRect(0, 0, 512, 256);
+  // vertical bark ridges and furrows
+  for (let i = 0; i < 140; i++) {
+    const x = Math.random() * 512;
+    const w = 2 + Math.random() * 7;
+    ctx.strokeStyle = Math.random() < 0.55 ? `rgba(48,28,14,${0.35 + Math.random() * 0.4})` : `rgba(170,120,78,${0.25 + Math.random() * 0.3})`;
+    ctx.lineWidth = w;
+    ctx.beginPath();
+    let px = x;
+    ctx.moveTo(px, 0);
+    for (let y = 0; y <= 256; y += 16) { px += (Math.random() - 0.5) * 6; ctx.lineTo(px, y); }
+    ctx.stroke();
+  }
+  // a few horizontal cracks
+  for (let i = 0; i < 18; i++) {
+    ctx.strokeStyle = 'rgba(40,22,10,0.5)';
+    ctx.lineWidth = 2;
+    const x = Math.random() * 512, y = Math.random() * 256;
+    ctx.beginPath(); ctx.moveTo(x, y); ctx.lineTo(x + 10 + Math.random() * 25, y + (Math.random() - 0.5) * 6); ctx.stroke();
+  }
+  const t = new THREE.CanvasTexture(c);
+  t.colorSpace = THREE.SRGBColorSpace;
+  t.wrapS = THREE.RepeatWrapping;
+  t.anisotropy = 8;
+  return t;
+}
+
+function makeRings(): THREE.CanvasTexture {
+  const c = document.createElement('canvas');
+  c.width = c.height = 512;
+  const ctx = c.getContext('2d')!;
+  const g = ctx.createRadialGradient(256, 256, 0, 256, 256, 256);
+  g.addColorStop(0, '#d9b47c'); g.addColorStop(0.85, '#c79a62'); g.addColorStop(0.93, '#8a5a32'); g.addColorStop(1, '#5a3a1e');
+  ctx.fillStyle = g;
+  ctx.fillRect(0, 0, 512, 512);
+  // growth rings, slightly wobbly
+  for (let r = 10; r < 232; r += 7 + Math.random() * 9) {
+    ctx.strokeStyle = `rgba(110,70,36,${0.25 + Math.random() * 0.35})`;
+    ctx.lineWidth = 1.5 + Math.random() * 2;
+    ctx.beginPath();
+    for (let a = 0; a <= Math.PI * 2 + 0.01; a += 0.08) {
+      const rr = r + Math.sin(a * 3 + r) * 2.5;
+      const x = 256 + Math.cos(a) * rr, y = 256 + Math.sin(a) * rr;
+      a === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+    }
+    ctx.stroke();
+  }
+  // radial drying cracks
+  for (let i = 0; i < 7; i++) {
+    const a = Math.random() * Math.PI * 2;
+    ctx.strokeStyle = 'rgba(60,34,16,0.7)';
+    ctx.lineWidth = 2 + Math.random() * 2;
+    ctx.beginPath();
+    ctx.moveTo(256 + Math.cos(a) * 20, 256 + Math.sin(a) * 20);
+    ctx.lineTo(256 + Math.cos(a + 0.05) * (120 + Math.random() * 110), 256 + Math.sin(a + 0.05) * (120 + Math.random() * 110));
+    ctx.stroke();
+  }
+  const t = new THREE.CanvasTexture(c);
+  t.colorSpace = THREE.SRGBColorSpace;
+  t.anisotropy = 8;
+  return t;
+}
+
+/** Cut tree stump with bark sides, ringed top and a little root flare. Top surface sits at y = h. */
+export function stump(h = 0.75, r = 0.36): THREE.Group {
+  barkTex ??= makeBark();
+  ringsTex ??= makeRings();
+  const g = new THREE.Group();
+  const profile = [
+    [r * 1.28, 0], [r * 1.16, 0.04], [r * 1.05, 0.1], [r * 1.0, 0.2],
+    [r * 0.97, h * 0.55], [r * 0.99, h - 0.03], [r * 1.0, h],
+  ].map(([x, y]) => new THREE.Vector2(x, y));
+  const bark = barkTex.clone();
+  bark.needsUpdate = true;
+  bark.repeat.set(2, 1);
+  bark.offset.x = Math.random();
+  const body = new THREE.Mesh(new THREE.LatheGeometry(profile, 40), new THREE.MeshStandardMaterial({ map: bark, roughness: 1 }));
+  body.rotation.y = Math.random() * Math.PI * 2;
+  body.castShadow = true;
+  body.receiveShadow = true;
+  g.add(body);
+  const top = new THREE.Mesh(new THREE.CircleGeometry(r * 0.985, 40), new THREE.MeshStandardMaterial({ map: ringsTex, roughness: 0.85 }));
+  top.rotation.set(-Math.PI / 2, 0, Math.random() * Math.PI * 2);
+  top.position.y = h + 0.001;
+  top.receiveShadow = true;
+  g.add(top);
+  return g;
+}
+
 export { std };

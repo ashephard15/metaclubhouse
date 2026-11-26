@@ -3,7 +3,7 @@ import { VRButton } from 'three/examples/jsm/webxr/VRButton.js';
 import { XRControllerModelFactory } from 'three/examples/jsm/webxr/XRControllerModelFactory.js';
 import { XRHandModelFactory } from 'three/examples/jsm/webxr/XRHandModelFactory.js';
 import { ARTIFACTS, ZONES, artifactsInZone, infoPointsInZone, type Artifact, type InfoPoint, type ZoneId } from '../data/artifacts';
-import { buildArtifactModel, pedestal, std } from './models';
+import { buildArtifactModel, pedestal, std, stump } from './models';
 import { buildZone, PORTALS, SPAWN, WALK_RADIUS } from './zones';
 import { InfoPanel } from './InfoPanel';
 import { BackpackPanel } from './BackpackPanel';
@@ -298,7 +298,7 @@ export class Engine {
     if (standH > 0) {
       const style = { treehouse: [0x8e5a2b, 0.7, false], egypt: [0xc2a26a, 0.6, false], nile: [0x9a7a52, 0.6, true] } as const;
       const [color, width, glass] = style[a.zone];
-      const stand = pedestal(color, standH, width, glass && !a.static);
+      const stand = a.zone === 'treehouse' ? stump(standH, 0.36) : pedestal(color, standH, width, glass && !a.static);
       stand.position.set(a.position[0], 0, a.position[2]);
       this.dynamicGroup.add(stand);
     }
@@ -384,8 +384,7 @@ export class Engine {
       // Small round table with a glass jar of mission scrolls
       const table = new THREE.Mesh(new THREE.CylinderGeometry(0.42, 0.42, 0.06, 32), wood);
       table.position.y = 0.72;
-      const leg = new THREE.Mesh(new THREE.CylinderGeometry(0.08, 0.14, 0.7, 12), wood);
-      leg.position.y = 0.35;
+      const leg = stump(0.69, 0.17);
       node.add(table, leg);
       const glass = new THREE.Mesh(
         new THREE.CylinderGeometry(0.11, 0.12, 0.24, 24, 1, true),
