@@ -1,0 +1,594 @@
+import * as THREE from 'three';
+import { VRButton } from 'three/examples/jsm/webxr/VRButton.js';
+import { XRControllerModelFactory } from 'three/examples/jsm/webxr/XRControllerModelFactory.js';
+import { XRHandModelFactory } from 'three/examples/jsm/webxr/XRHandModelFactory.js';
+import { ARTIFACTS, ZONES, artifactsInZone, type Artifact, type ZoneId } from '../data/artifacts';
+import { buildArtifactModel } from './models';
+import { buildZone, PORTALS, SPAWN, WALK_RADIUS } from './zones';
+import { InfoPanel } from './InfoPanel';
+import { makeLabel, type CanvasPlane } from './canvasText';
+import { Sfx } from './sfx';
+
+export interface GameState {
+  zone: ZoneId;
+  discovered: string[];
+  inXR: boolean;
+  inspecting: string | null;
+}
+
+type Hit =
+  | { kind: 'artifact'; artifact: Artifact; point: THREE.Vector3 }
+  | { kind: 'portal'; target: ZoneId; point: THREE.Vector3 }
+  | { kind: 'panel'; object: THREE.Object3D; point: THREE.Vector3 }
+  | { kind: 'floor'; point: THREE.Vector3 };
+
+const STORAGE_KEY = 'time-explorers-progress-v1';
+const BASE = import.meta.env.BASE_URL;
+const UP = new THREE.Vector3(0, 1, 0);
+
+interface ControllerRig {
+  target: THREE.XRTargetRaySpace;
+  line: THREE.Line;
+  reticle: THREE.Mesh;
+  source: XRInputSource | null;
+  hovered: Hit | null;
+}
+
+export class Engine {
+  renderer: THREE.WebGLRenderer;
+  scene = new THREE.Scene();
+  camera: THREE.PerspectiveCamera;
+  rig = new THREE.Group();
+  vrButton: HTMLElement;
+
+  private zoneGroup = new THREE.Group();
+  private dynamicGroup = new THREE.Group();
+  private floor: THREE.Mesh | null = null;
+  private artifactNodes: { artifact: Artifact; node: THREE.Group; ring: THREE.Mesh; baseY: number }[] = [];
+  private portalNodes: { target: ZoneId; node: THREE.Group; swirl: THREE.Mesh }[] = [];
+  private labels: CanvasPlane[] = [];
+  private panel = new InfoPanel();
+  private raycaster = new THREE.Raycaster();
+  private controllers: ControllerRig[] = [];
+  private clock = new THREE.Clock();
+  private sfx = new Sfx();
+  private hemi: THREE.HemisphereLight;
+  private sun: THREE.DirectionalLight;
+  private textureLoader = new THREE.TextureLoader();
+
+  // desktop input
+  private keys = new Set<string>();
+  private yaw = 0;
+  private pitch = 0;
+  private dragging = false;
+  private dragDist = 0;
+  private mouse = new THREE.Vector2(-10, -10);
+  private desktopHover: Hit | null = null;
+
+  // xr locomotion
+  private snapCooldown = 0;
+
+  state: GameState;
+  private listeners = new Set<(s: GameState) => void>();
+
+  constructor(private container: HTMLElement) {
+    this.state = { zone: 'treehouse', discovered: this.loadProgress(), inXR: false, inspecting: null };
+
+    this.renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: 'high-performance' });
+    this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    this.renderer.setSize(container.clientWidth, container.clientHeight);
+    this.renderer.outputColorSpace = THREE.SRGBColorSpace;
+    this.renderer.toneMapping = THREE.ACESFilmicToneMapping;
+    this.renderer.shadowMap.enabled = true;
+    this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+    this.renderer.xr.enabled = true;
+    this.renderer.xr.setReferenceSpaceType('local-floor');
+    this.renderer.xr.setFoveation(1);
+    container.appendChild(this.renderer.domElement);
+
+    this.camera = new THREE.PerspectiveCamera(70, container.clientWidth / container.clientHeight, 0.05, 400);
+    this.camera.rotation.order = 'YXZ';
+    this.camera.position.set(0, 1.6, 0);
+    this.rig.add(this.camera);
+    this.scene.add(this.rig, this.zoneGroup, this.dynamicGroup, this.panel.group);
+
+    this.hemi = new THREE.HemisphereLight(0xffffff, 0x444422, 1.2);
+    this.sun = new THREE.DirectionalLight(0xffffff, 2.2);
+    this.sun.position.set(8, 14, 6);
+    this.sun.castShadow = true;
+    this.sun.shadow.mapSize.set(1024, 1024);
+    Object.assign(this.sun.shadow.camera, { left: -10, right: 10, top: 10, bottom: -10, near: 1, far: 40 });
+    this.scene.add(this.hemi, this.sun);
+
+    this.vrButton = VRButton.createButton(this.renderer, {
+      optionalFeatures: ['local-floor', 'bounded-floor', 'hand-tracking', 'layers'],
+    });
+
+    this.setupControllers();
+    this.setupDesktopInput();
+    this.loadZone('treehouse');
+
+    this.renderer.xr.addEventListener('sessionstart', () => {
+      this.camera.position.set(0, 0, 0);
+      this.camera.rotation.set(0, 0, 0);
+      this.panel.hide();
+      this.setState({ inXR: true, inspecting: null });
+    });
+    this.renderer.xr.addEventListener('sessionend', () => {
+      this.camera.position.set(0, 1.6, 0);
+      this.camera.rotation.set(this.pitch, this.yaw, 0);
+      this.rig.rotation.set(0, 0, 0);
+      this.setState({ inXR: false });
+      this.onResize();
+    });
+
+    window.addEventListener('resize', this.onResize);
+    this.renderer.setAnimationLoop(this.tick);
+  }
+
+  // ---------------- state ----------------
+  subscribe(fn: (s: GameState) => void) {
+    this.listeners.add(fn);
+    fn(this.state);
+    return () => this.listeners.delete(fn);
+  }
+  private setState(p: Partial<GameState>) {
+    this.state = { ...this.state, ...p };
+    this.listeners.forEach((l) => l(this.state));
+  }
+  private loadProgress(): string[] {
+    try {
+      const raw = localStorage.getItem(STORAGE_KEY);
+      const ids = raw ? (JSON.parse(raw) as string[]) : [];
+      return ids.filter((id) => ARTIFACTS.some((a) => a.id === id));
+    } catch {
+      return [];
+    }
+  }
+  private saveProgress() {
+    try { localStorage.setItem(STORAGE_KEY, JSON.stringify(this.state.discovered)); } catch { /* storage unavailable */ }
+  }
+  resetProgress() {
+    this.setState({ discovered: [] });
+    this.saveProgress();
+    this.refreshRings();
+  }
+
+  // ---------------- zones ----------------
+  travelTo(zone: ZoneId) {
+    this.panel.hide();
+    this.loadZone(zone);
+    this.sfx.portal();
+  }
+
+  private disposeTree(obj: THREE.Object3D) {
+    obj.traverse((o) => {
+      const m = o as THREE.Mesh;
+      if (m.geometry) m.geometry.dispose();
+      const mat = m.material as THREE.Material | THREE.Material[] | undefined;
+      if (Array.isArray(mat)) mat.forEach((x) => x.dispose());
+      else if (mat) { (mat as THREE.MeshBasicMaterial).map?.dispose(); mat.dispose(); }
+    });
+  }
+
+  private loadZone(id: ZoneId) {
+    this.disposeTree(this.zoneGroup);
+    this.disposeTree(this.dynamicGroup);
+    this.zoneGroup.clear();
+    this.dynamicGroup.clear();
+    this.labels = [];
+    this.artifactNodes = [];
+    this.portalNodes = [];
+
+    const z = ZONES[id];
+    this.scene.background = new THREE.Color(z.sky);
+    this.scene.fog = new THREE.Fog(z.fog, id === 'nile' ? 20 : 30, id === 'egypt' ? 160 : 90);
+    this.hemi.color.set(id === 'nile' ? 0xfff0dd : 0xffffff);
+    this.hemi.intensity = id === 'nile' ? 1.0 : 1.2;
+    this.sun.intensity = id === 'nile' ? 0.6 : id === 'egypt' ? 3 : 2.2;
+
+    const { group, floor } = buildZone(id);
+    this.floor = floor;
+    this.zoneGroup.add(group);
+
+    // Zone title sign
+    const title = makeLabel(z.name, 2.6);
+    title.mesh.position.set(0, 3.5, -6.9);
+    this.labels.push(title);
+    this.dynamicGroup.add(title.mesh);
+
+    for (const a of artifactsInZone(id)) this.spawnArtifact(a);
+    for (const p of PORTALS[id]) this.spawnPortal(p.target, p.position);
+
+    // reset player
+    this.rig.position.copy(SPAWN);
+    this.rig.rotation.set(0, 0, 0);
+    if (!this.renderer.xr.isPresenting) {
+      this.yaw = 0;
+      this.pitch = -0.08;
+      this.camera.rotation.set(this.pitch, this.yaw, 0);
+    }
+    this.setState({ zone: id, inspecting: null });
+  }
+
+  private spawnArtifact(a: Artifact) {
+    const node = new THREE.Group();
+    node.position.set(...a.position);
+    const model = buildArtifactModel(a.shape, a.color);
+    node.add(model);
+    node.userData.artifact = a;
+
+    // Swap in the transparent PNG cutout if it has been added to public/assets/cutouts/
+    this.textureLoader.load(
+      `${BASE}assets/cutouts/${a.cutout}`,
+      (tex) => {
+        const img = tex.image as HTMLImageElement;
+        if (!img?.width) return;
+        tex.colorSpace = THREE.SRGBColorSpace;
+        const h = 0.45;
+        const w = (h * img.width) / img.height;
+        const plane = new THREE.Mesh(
+          new THREE.PlaneGeometry(w, h),
+          new THREE.MeshBasicMaterial({ map: tex, transparent: true, alphaTest: 0.05, side: THREE.DoubleSide }),
+        );
+        plane.userData.billboard = true;
+        node.remove(model);
+        this.disposeTree(model);
+        node.add(plane);
+      },
+      undefined,
+      () => { /* no cutout yet — keep the 3D stand-in */ },
+    );
+
+    const ring = new THREE.Mesh(
+      new THREE.TorusGeometry(0.32, 0.015, 8, 48),
+      new THREE.MeshBasicMaterial({ color: 0xf7c95c }),
+    );
+    ring.rotation.x = Math.PI / 2;
+    ring.position.set(a.position[0], a.position[1] - 0.22, a.position[2]);
+
+    const label = makeLabel(a.name, 0.8);
+    label.mesh.position.set(0, 0.42, 0);
+    label.mesh.userData.billboard = true;
+    node.add(label.mesh);
+    this.labels.push(label);
+
+    this.dynamicGroup.add(node, ring);
+    this.artifactNodes.push({ artifact: a, node, ring, baseY: a.position[1] });
+    this.refreshRings();
+  }
+
+  private refreshRings() {
+    for (const n of this.artifactNodes) {
+      (n.ring.material as THREE.MeshBasicMaterial).color.set(this.state.discovered.includes(n.artifact.id) ? 0x5be37a : 0xf7c95c);
+    }
+  }
+
+  private spawnPortal(target: ZoneId, pos: [number, number, number]) {
+    const node = new THREE.Group();
+    node.position.set(...pos);
+    node.lookAt(SPAWN.x, 0, SPAWN.z);
+    const frame = new THREE.Mesh(
+      new THREE.TorusGeometry(1.0, 0.09, 12, 48),
+      new THREE.MeshStandardMaterial({ color: 0xd4af37, metalness: 0.8, roughness: 0.3, emissive: 0x3a2a00 }),
+    );
+    frame.position.y = 1.35;
+    const swirlCanvas = document.createElement('canvas');
+    swirlCanvas.width = swirlCanvas.height = 256;
+    const c = swirlCanvas.getContext('2d')!;
+    const grad = c.createRadialGradient(128, 128, 10, 128, 128, 128);
+    const tint = target === 'egypt' ? '#ffb347' : target === 'nile' ? '#4fc3f7' : '#7ee08a';
+    grad.addColorStop(0, '#ffffff');
+    grad.addColorStop(0.35, tint);
+    grad.addColorStop(1, '#1a0f3a');
+    c.fillStyle = grad;
+    c.fillRect(0, 0, 256, 256);
+    c.strokeStyle = 'rgba(255,255,255,0.45)';
+    c.lineWidth = 6;
+    for (let i = 0; i < 5; i++) {
+      c.beginPath();
+      for (let t = 0; t < 1; t += 0.02) {
+        const ang = t * Math.PI * 3 + (i * Math.PI * 2) / 5;
+        const r = t * 120;
+        const x = 128 + Math.cos(ang) * r, y = 128 + Math.sin(ang) * r;
+        t === 0 ? c.moveTo(x, y) : c.lineTo(x, y);
+      }
+      c.stroke();
+    }
+    const tex = new THREE.CanvasTexture(swirlCanvas);
+    tex.colorSpace = THREE.SRGBColorSpace;
+    const swirl = new THREE.Mesh(new THREE.CircleGeometry(0.95, 48), new THREE.MeshBasicMaterial({ map: tex, transparent: true, opacity: 0.9 }));
+    swirl.position.y = 1.35;
+    swirl.userData.portal = target;
+    const label = makeLabel(`→ ${ZONES[target].name}`, 1.6);
+    label.mesh.position.y = 2.7;
+    this.labels.push(label);
+    node.add(frame, swirl, label.mesh);
+    this.dynamicGroup.add(node);
+    this.portalNodes.push({ target, node, swirl });
+  }
+
+  // ---------------- interaction ----------------
+  private interactTargets(): THREE.Object3D[] {
+    const t: THREE.Object3D[] = [...this.panel.interactiveMeshes];
+    if (!this.panel.group.visible) {
+      for (const n of this.artifactNodes) t.push(n.node);
+      for (const p of this.portalNodes) t.push(p.swirl);
+    }
+    if (this.floor) t.push(this.floor);
+    return t;
+  }
+
+  private castRay(origin: THREE.Vector3, dir: THREE.Vector3): Hit | null {
+    this.raycaster.set(origin, dir);
+    this.raycaster.far = 30;
+    const hits = this.raycaster.intersectObjects(this.interactTargets(), true);
+    for (const h of hits) {
+      let o: THREE.Object3D | null = h.object;
+      if (o.userData.panelAction) return { kind: 'panel', object: o, point: h.point };
+      if (o.userData.portal) return { kind: 'portal', target: o.userData.portal, point: h.point };
+      while (o) {
+        if (o.userData.artifact) return { kind: 'artifact', artifact: o.userData.artifact, point: h.point };
+        o = o.parent;
+      }
+      if (h.object === this.floor) return { kind: 'floor', point: h.point };
+    }
+    return null;
+  }
+
+  private headPose() {
+    const pos = new THREE.Vector3();
+    const dir = new THREE.Vector3();
+    this.camera.getWorldPosition(pos);
+    this.camera.getWorldDirection(dir);
+    return { pos, dir };
+  }
+
+  private activate(hit: Hit | null, src: XRInputSource | null) {
+    if (!hit) return;
+    this.sfx.unlock();
+    if (hit.kind === 'panel') {
+      const r = this.panel.activate(hit.object);
+      if (r === 'correct') this.discover(this.panel.artifact!);
+      else if (r === 'wrong') { this.sfx.wrong(); this.pulse(src, 0.6, 120); }
+      else if (r === 'close') { this.sfx.click(); this.setState({ inspecting: null }); }
+    } else if (hit.kind === 'artifact') {
+      const { pos, dir } = this.headPose();
+      this.panel.open(hit.artifact, this.state.discovered.includes(hit.artifact.id));
+      this.panel.placeInFront(pos, dir);
+      this.sfx.click();
+      this.pulse(src, 0.4, 60);
+      this.setState({ inspecting: hit.artifact.id });
+    } else if (hit.kind === 'portal') {
+      this.travelTo(hit.target);
+    } else if (hit.kind === 'floor' && this.renderer.xr.isPresenting && !this.panel.group.visible) {
+      this.teleportTo(hit.point);
+    }
+  }
+
+  closePanel() {
+    this.panel.hide();
+    this.setState({ inspecting: null });
+  }
+
+  private discover(a: Artifact) {
+    if (!this.state.discovered.includes(a.id)) {
+      const discovered = [...this.state.discovered, a.id];
+      this.setState({ discovered });
+      this.saveProgress();
+      this.refreshRings();
+      if (discovered.length === ARTIFACTS.length) this.sfx.fanfare();
+      else this.sfx.correct();
+    } else {
+      this.sfx.correct();
+    }
+    for (const c of this.controllers) this.pulse(c.source, 0.8, 200);
+  }
+
+  private teleportTo(p: THREE.Vector3) {
+    const { pos } = this.headPose();
+    const target = this.clampToBounds(new THREE.Vector3(p.x, 0, p.z));
+    this.rig.position.x += target.x - pos.x;
+    this.rig.position.z += target.z - pos.z;
+    this.sfx.click();
+  }
+
+  private clampToBounds(v: THREE.Vector3) {
+    const len = Math.hypot(v.x, v.z);
+    if (len > WALK_RADIUS) { v.x *= WALK_RADIUS / len; v.z *= WALK_RADIUS / len; }
+    return v;
+  }
+
+  private pulse(src: XRInputSource | null, intensity: number, ms: number) {
+    const act = src?.gamepad?.hapticActuators?.[0] as { pulse?: (i: number, d: number) => void } | undefined;
+    act?.pulse?.(intensity, ms);
+  }
+
+  // ---------------- XR controllers ----------------
+  private setupControllers() {
+    const modelFactory = new XRControllerModelFactory();
+    const handFactory = new XRHandModelFactory();
+    for (let i = 0; i < 2; i++) {
+      const target = this.renderer.xr.getController(i);
+      const line = new THREE.Line(
+        new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(0, 0, 0), new THREE.Vector3(0, 0, -1)]),
+        new THREE.LineBasicMaterial({ color: 0xf7c95c, transparent: true, opacity: 0.8 }),
+      );
+      line.scale.z = 5;
+      target.add(line);
+      const reticle = new THREE.Mesh(new THREE.RingGeometry(0.12, 0.16, 32), new THREE.MeshBasicMaterial({ color: 0x7ee08a, side: THREE.DoubleSide }));
+      reticle.rotation.x = -Math.PI / 2;
+      reticle.visible = false;
+      this.scene.add(reticle);
+
+      const rig: ControllerRig = { target, line, reticle, source: null, hovered: null };
+      target.addEventListener('connected', (e) => { rig.source = (e as unknown as { data: XRInputSource }).data; });
+      target.addEventListener('disconnected', () => { rig.source = null; reticle.visible = false; });
+      target.addEventListener('select', () => this.activate(rig.hovered, rig.source));
+      this.rig.add(target);
+
+      const grip = this.renderer.xr.getControllerGrip(i);
+      grip.add(modelFactory.createControllerModel(grip));
+      this.rig.add(grip);
+
+      const hand = this.renderer.xr.getHand(i);
+      hand.add(handFactory.createHandModel(hand, 'mesh'));
+      this.rig.add(hand);
+
+      this.controllers.push(rig);
+    }
+  }
+
+  private updateControllers(dt: number) {
+    const panelHovers: THREE.Object3D[] = [];
+    for (const c of this.controllers) {
+      if (!c.source || c.source.targetRayMode !== 'tracked-pointer') { c.line.visible = false; c.reticle.visible = false; continue; }
+      c.line.visible = true;
+      const origin = new THREE.Vector3();
+      const quat = new THREE.Quaternion();
+      c.target.getWorldPosition(origin);
+      c.target.getWorldQuaternion(quat);
+      const dir = new THREE.Vector3(0, 0, -1).applyQuaternion(quat);
+      const hit = this.castRay(origin, dir);
+      if (hit?.kind !== c.hovered?.kind || (hit?.kind === 'artifact' && c.hovered?.kind === 'artifact' && hit.artifact !== c.hovered.artifact)) {
+        if (hit && hit.kind !== 'floor') this.pulse(c.source, 0.15, 20);
+      }
+      c.hovered = hit;
+      c.line.scale.z = hit ? origin.distanceTo(hit.point) : 5;
+      const lm = c.line.material as THREE.LineBasicMaterial;
+      lm.color.set(hit && hit.kind !== 'floor' ? 0x7ee08a : 0xf7c95c);
+      c.reticle.visible = hit?.kind === 'floor' && !this.panel.group.visible;
+      if (hit?.kind === 'floor') c.reticle.position.copy(hit.point).setY(0.01);
+      if (hit?.kind === 'panel') panelHovers.push(hit.object);
+    }
+    this.panel.setHovered(panelHovers[0] ?? null);
+
+    // thumbsticks
+    const session = this.renderer.xr.getSession();
+    if (!session) return;
+    this.snapCooldown -= dt;
+    for (const src of session.inputSources) {
+      const gp = src.gamepad;
+      if (!gp || gp.axes.length < 4) continue;
+      const x = gp.axes[2], y = gp.axes[3];
+      if (src.handedness === 'left') {
+        if (Math.abs(x) > 0.15 || Math.abs(y) > 0.15) {
+          const { dir } = this.headPose();
+          dir.y = 0; dir.normalize();
+          const right = new THREE.Vector3().crossVectors(dir, UP).normalize();
+          const move = dir.multiplyScalar(-y).addScaledVector(right, x).multiplyScalar(2.0 * dt);
+          this.moveRig(move);
+        }
+      } else if (src.handedness === 'right') {
+        if (Math.abs(x) > 0.7 && this.snapCooldown <= 0) {
+          this.snapTurn(x > 0 ? -Math.PI / 6 : Math.PI / 6);
+          this.snapCooldown = 0.35;
+        }
+        if (Math.abs(x) < 0.3) this.snapCooldown = Math.min(this.snapCooldown, 0);
+      }
+    }
+  }
+
+  private moveRig(delta: THREE.Vector3) {
+    const { pos } = this.headPose();
+    const next = this.clampToBounds(new THREE.Vector3(pos.x + delta.x, 0, pos.z + delta.z));
+    this.rig.position.x += next.x - pos.x;
+    this.rig.position.z += next.z - pos.z;
+  }
+
+  private snapTurn(angle: number) {
+    const { pos } = this.headPose();
+    const offset = this.rig.position.clone().sub(pos);
+    offset.applyAxisAngle(UP, angle);
+    this.rig.position.copy(pos).add(offset);
+    this.rig.rotateY(angle);
+  }
+
+  // ---------------- desktop ----------------
+  private setupDesktopInput() {
+    const el = this.renderer.domElement;
+    el.addEventListener('pointerdown', (e) => { this.dragging = true; this.dragDist = 0; el.setPointerCapture(e.pointerId); });
+    el.addEventListener('pointermove', (e) => {
+      const r = el.getBoundingClientRect();
+      this.mouse.set(((e.clientX - r.left) / r.width) * 2 - 1, -((e.clientY - r.top) / r.height) * 2 + 1);
+      if (this.dragging && !this.renderer.xr.isPresenting) {
+        this.dragDist += Math.abs(e.movementX) + Math.abs(e.movementY);
+        this.yaw -= e.movementX * 0.004;
+        this.pitch = THREE.MathUtils.clamp(this.pitch - e.movementY * 0.004, -1.3, 1.3);
+        this.camera.rotation.set(this.pitch, this.yaw, 0);
+      }
+    });
+    el.addEventListener('pointerup', () => {
+      this.dragging = false;
+      if (this.dragDist < 6) this.activate(this.desktopHover, null);
+    });
+    window.addEventListener('keydown', (e) => {
+      this.keys.add(e.code);
+      if (e.code === 'Escape') this.closePanel();
+    });
+    window.addEventListener('keyup', (e) => this.keys.delete(e.code));
+    window.addEventListener('blur', () => this.keys.clear());
+  }
+
+  private updateDesktop(dt: number) {
+    const k = this.keys;
+    const f = (k.has('KeyW') || k.has('ArrowUp') ? 1 : 0) - (k.has('KeyS') || k.has('ArrowDown') ? 1 : 0);
+    const s = (k.has('KeyD') || k.has('ArrowRight') ? 1 : 0) - (k.has('KeyA') || k.has('ArrowLeft') ? 1 : 0);
+    if (f || s) {
+      const fwd = new THREE.Vector3(-Math.sin(this.yaw), 0, -Math.cos(this.yaw));
+      const right = new THREE.Vector3(Math.cos(this.yaw), 0, -Math.sin(this.yaw));
+      this.moveRig(fwd.multiplyScalar(f).addScaledVector(right, s).normalize().multiplyScalar(3 * dt));
+    }
+    this.raycaster.setFromCamera(this.mouse, this.camera);
+    const hit = this.castRay(this.raycaster.ray.origin.clone(), this.raycaster.ray.direction.clone());
+    this.desktopHover = hit && hit.kind !== 'floor' ? hit : null;
+    this.renderer.domElement.style.cursor = this.desktopHover ? 'pointer' : this.dragging ? 'grabbing' : 'grab';
+    this.panel.setHovered(hit?.kind === 'panel' ? hit.object : null);
+  }
+
+  // ---------------- loop ----------------
+  private tick = () => {
+    const dt = Math.min(this.clock.getDelta(), 0.1);
+    const t = this.clock.elapsedTime;
+
+    if (this.renderer.xr.isPresenting) this.updateControllers(dt);
+    else this.updateDesktop(dt);
+
+    const head = new THREE.Vector3();
+    this.camera.getWorldPosition(head);
+
+    for (const n of this.artifactNodes) {
+      n.node.position.y = n.baseY + Math.sin(t * 1.6 + n.baseY * 5) * 0.04;
+      const model = n.node.children[0];
+      if (model && !model.userData.billboard) model.rotation.y = t * 0.6;
+      n.ring.scale.setScalar(1 + Math.sin(t * 3) * 0.05);
+    }
+    for (const p of this.portalNodes) p.swirl.rotation.z = -t * 1.2;
+    this.dynamicGroup.traverse((o) => {
+      if (o.userData.billboard) {
+        const wp = new THREE.Vector3();
+        o.getWorldPosition(wp);
+        o.lookAt(head.x, wp.y, head.z);
+      }
+    });
+
+    this.renderer.render(this.scene, this.camera);
+  };
+
+  private onResize = () => {
+    if (this.renderer.xr.isPresenting) return;
+    const w = this.container.clientWidth, h = this.container.clientHeight;
+    this.camera.aspect = w / h;
+    this.camera.updateProjectionMatrix();
+    this.renderer.setSize(w, h);
+  };
+
+  dispose() {
+    this.renderer.setAnimationLoop(null);
+    window.removeEventListener('resize', this.onResize);
+    this.disposeTree(this.scene);
+    this.renderer.dispose();
+    this.renderer.domElement.remove();
+    this.vrButton.remove();
+  }
+}

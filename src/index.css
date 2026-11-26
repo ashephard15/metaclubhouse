@@ -1,0 +1,24 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+html, body, #root { height: 100%; margin: 0; }
+
+/* Restyle three.js VRButton (it sets inline styles, so !important is required) */
+.vr-button {
+  position: static !important;
+  left: auto !important;
+  bottom: auto !important;
+  width: auto !important;
+  padding: 0.75rem 1.5rem !important;
+  border: 2px solid #f7c95c !important;
+  border-radius: 9999px !important;
+  background: linear-gradient(135deg, #b8862e, #8a5a1c) !important;
+  color: #fff8e1 !important;
+  font: 700 15px system-ui, sans-serif !important;
+  letter-spacing: 0.05em;
+  opacity: 1 !important;
+  box-shadow: 0 6px 24px rgba(0, 0, 0, 0.4);
+  display: inline-block;
+}
+a.vr-button { text-decoration: none !important; background: rgba(60, 30, 20, 0.85) !important; font-size: 12px !important; }
