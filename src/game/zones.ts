@@ -5,7 +5,7 @@ import { palm, pyramid, std, tree } from './models';
 export interface PortalDef { target: ZoneId; position: [number, number, number] }
 
 export const PORTALS: Record<ZoneId, PortalDef[]> = {
-  treehouse: [ { target: 'egypt', position: [-1.4, 0, -6.4] }, { target: 'nile', position: [1.4, 0, -6.4] } ],
+  treehouse: [ { target: 'egypt', position: [4.53, 0, 2.39] }, { target: 'nile', position: [5.0, 0, 4.41] } ], // in front of the painted portal
   egypt: [ { target: 'treehouse', position: [-1.4, 0, -6.4] }, { target: 'nile', position: [1.4, 0, -6.4] } ],
   nile: [ { target: 'treehouse', position: [-1.4, 0, -6.4] }, { target: 'egypt', position: [1.4, 0, -6.4] } ],
 };
