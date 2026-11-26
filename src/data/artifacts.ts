@@ -40,6 +40,10 @@ export interface Zone {
   fog: number;
   /** Optional environment reference image (flat, not a panorama) in public/assets/references/. */
   reference?: string;
+  /** Optional equirectangular 360° backdrop (2:1) in public/assets/panoramas/. */
+  panorama?: string;
+  /** Degrees to turn the panorama so its best view faces the portals (forward from spawn). */
+  panoramaYaw?: number;
 }
 
 export const ZONES: Record<ZoneId, Zone> = {
@@ -51,6 +55,8 @@ export const ZONES: Record<ZoneId, Zone> = {
     ground: 0x4f7a3a,
     fog: 0xa8d4ec,
     reference: 'references/treehouse_hub_reference.png',
+    panorama: 'panoramas/treehouse_hub_360.png',
+    panoramaYaw: 0,
   },
   egypt: {
     id: 'egypt',
@@ -60,11 +66,15 @@ export const ZONES: Record<ZoneId, Zone> = {
     ground: 0xd9b26f,
     fog: 0xf5d39a,
     reference: 'references/egypt_arrival_reference.png',
+    panorama: 'panoramas/egypt_marketplace_portal_360.png',
+    panoramaYaw: 0,
   },
   nile: {
     id: 'nile',
     name: 'Nile Fossil Exhibit',
     subtitle: 'Ancient life along the river',
+    panorama: 'panoramas/nile_fossil_marketplace_360.png',
+    panoramaYaw: 0,
     sky: 0x2c3e50,
     ground: 0x6b5a45,
     fog: 0x34495e,

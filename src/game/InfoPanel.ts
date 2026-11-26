@@ -162,7 +162,7 @@ export class InfoPanel {
 
   // ---------- drawing ----------
   private frame(ctx: CanvasRenderingContext2D, w: number, h: number) {
-    ctx.fillStyle = 'rgba(28,20,12,0.98)';
+    ctx.fillStyle = 'rgb(28,20,12)';
     roundRect(ctx, 0, 0, w, h, 48);
     ctx.fill();
     ctx.strokeStyle = '#d4a64a';

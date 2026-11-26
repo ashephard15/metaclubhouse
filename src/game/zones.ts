@@ -13,9 +13,14 @@ export const PORTALS: Record<ZoneId, PortalDef[]> = {
 export const SPAWN = new THREE.Vector3(0, 0, 4.5);
 export const WALK_RADIUS = 7;
 
-/** Builds static scenery for a zone. Returns the group and the walkable floor mesh. */
-export function buildZone(id: ZoneId): { group: THREE.Group; floor: THREE.Mesh } {
+/**
+ * Builds static scenery for a zone. Returns the group and the walkable floor mesh.
+ * Distant scenery goes in `far`, which is skipped when a 360° panorama backdrop is used,
+ * so the panorama provides the horizon while the playable area stays real 3D geometry.
+ */
+export function buildZone(id: ZoneId, panorama = false): { group: THREE.Group; floor: THREE.Mesh } {
   const g = new THREE.Group();
+  const far = new THREE.Group();
   let floor: THREE.Mesh;
 
   if (id === 'treehouse') {
@@ -27,44 +32,44 @@ export function buildZone(id: ZoneId): { group: THREE.Group; floor: THREE.Mesh }
     for (let i = 0; i < 16; i++) {
       const plank = new THREE.Mesh(new THREE.BoxGeometry(16, 0.01, 0.04), std(0x6e4826));
       plank.position.set(0, 0.006, -8 + i * 1.0);
-      g.add(plank);
+      far.add(plank);
     }
     // Railing
     const railMat = std(0x7a4f2a);
     const rail = new THREE.Mesh(new THREE.TorusGeometry(7.8, 0.06, 8, 64), railMat);
     rail.rotation.x = Math.PI / 2;
     rail.position.y = 1.0;
-    g.add(rail);
+    far.add(rail);
     for (let i = 0; i < 32; i++) {
       const a = (i / 32) * Math.PI * 2;
       const post = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.05, 1.0, 6), railMat);
       post.position.set(Math.cos(a) * 7.8, 0.5, Math.sin(a) * 7.8);
-      g.add(post);
+      far.add(post);
     }
     // Giant trunk behind, canopy overhead
     const trunk = new THREE.Mesh(new THREE.CylinderGeometry(1.3, 1.8, 30, 16), std(0x5b3a1e, { roughness: 1 }));
     trunk.position.set(0, -5, -9.8);
-    g.add(trunk);
+    far.add(trunk);
     for (let i = 0; i < 10; i++) {
       const a = (i / 10) * Math.PI * 2;
       const leaf = new THREE.Mesh(new THREE.IcosahedronGeometry(3 + (i % 3), 1), std(0x3f7f32, { flatShading: true }));
       leaf.position.set(Math.cos(a) * 7, 8 + (i % 2) * 1.5, Math.sin(a) * 7 - 3);
-      g.add(leaf);
+      far.add(leaf);
     }
     // Forest floor far below
     const ground = new THREE.Mesh(new THREE.CircleGeometry(80, 32), std(0x3e6b2c));
     ground.rotation.x = -Math.PI / 2;
     ground.position.y = -8;
-    g.add(ground);
+    far.add(ground);
     for (let i = 0; i < 40; i++) {
       const t = tree(6 + Math.random() * 4, 2.5 + Math.random(), [0x3d7a2f, 0x4d8c3a, 0x2f6a28][i % 3]);
       const a = Math.random() * Math.PI * 2;
       const r = 14 + Math.random() * 40;
       t.position.set(Math.cos(a) * r, -8, Math.sin(a) * r);
-      g.add(t);
+      far.add(t);
     }
   } else if (id === 'egypt') {
-    floor = new THREE.Mesh(new THREE.CircleGeometry(120, 48), std(0xd9b26f, { roughness: 1 }));
+    floor = new THREE.Mesh(new THREE.CircleGeometry(panorama ? 9 : 120, 48), std(panorama ? 0xd8bf94 : 0xd9b26f, { roughness: 1 }));
     floor.rotation.x = -Math.PI / 2;
     floor.receiveShadow = true;
     g.add(floor);
@@ -75,11 +80,11 @@ export function buildZone(id: ZoneId): { group: THREE.Group; floor: THREE.Mesh }
       const a = Math.random() * Math.PI * 2;
       const r = 50 + Math.random() * 50;
       d.position.set(Math.cos(a) * r, 0, Math.sin(a) * r);
-      g.add(d);
+      far.add(d);
     }
-    const p1 = pyramid(14); p1.position.x = -6; p1.position.z = -45; g.add(p1);
-    const p2 = pyramid(11); p2.position.x = 18; p2.position.z = -55; g.add(p2);
-    const p3 = pyramid(6);  p3.position.x = 30; p3.position.z = -38; g.add(p3);
+    const p1 = pyramid(14); p1.position.x = -6; p1.position.z = -45; far.add(p1);
+    const p2 = pyramid(11); p2.position.x = 18; p2.position.z = -55; far.add(p2);
+    const p3 = pyramid(6);  p3.position.x = 30; p3.position.z = -38; far.add(p3);
     // Sphinx (stylised)
     const sphinx = new THREE.Group();
     const stone = std(0xc9a25a, { roughness: 1, flatShading: true });
@@ -89,7 +94,7 @@ export function buildZone(id: ZoneId): { group: THREE.Group; floor: THREE.Mesh }
     for (const s of [-1, 1]) { const paw = new THREE.Mesh(new THREE.BoxGeometry(0.8, 0.6, 3), stone); paw.position.set(s * 1, 0.3, -4.5); sphinx.add(paw); }
     sphinx.position.set(-16, 0, -18);
     sphinx.rotation.y = 0.6;
-    g.add(sphinx);
+    far.add(sphinx);
     // Obelisks + palms
     for (const x of [-7, 7]) {
       const ob = new THREE.Mesh(new THREE.CylinderGeometry(0.25, 0.45, 6, 4), std(0xb38b4d, { flatShading: true }));
@@ -107,7 +112,7 @@ export function buildZone(id: ZoneId): { group: THREE.Group; floor: THREE.Mesh }
       const a = (i / 10) * Math.PI * 2 + 0.3;
       p.position.set(Math.cos(a) * (10 + Math.random() * 4), 0, Math.sin(a) * (10 + Math.random() * 4));
       p.rotation.y = Math.random() * 6;
-      g.add(p);
+      far.add(p);
     }
     // Stone path from spawn to the portals (matches the reference art)
     for (let i = 0; i < 26; i++) {
@@ -159,7 +164,7 @@ export function buildZone(id: ZoneId): { group: THREE.Group; floor: THREE.Mesh }
     const nile = new THREE.Mesh(new THREE.PlaneGeometry(30, 200), std(0x2e7fb0, { roughness: 0.15, metalness: 0.3 }));
     nile.rotation.x = -Math.PI / 2;
     nile.position.set(26, 0.02, 0);
-    g.add(nile);
+    far.add(nile);
     const boat = new THREE.Group();
     const hull = new THREE.Mesh(new THREE.CylinderGeometry(0.6, 0.3, 6, 10, 1, false, 0, Math.PI), std(0x7a4f2a));
     hull.rotation.set(0, 0, Math.PI / 2);
@@ -173,15 +178,15 @@ export function buildZone(id: ZoneId): { group: THREE.Group; floor: THREE.Mesh }
     boat.add(sail);
     boat.position.set(20, 0.3, -12);
     boat.rotation.y = Math.PI / 2;
-    g.add(boat);
+    far.add(boat);
 
     // Sun
     const sun = new THREE.Mesh(new THREE.SphereGeometry(6, 24, 16), new THREE.MeshBasicMaterial({ color: 0xfff1b8 }));
     sun.position.set(60, 55, -110);
-    g.add(sun);
+    far.add(sun);
   } else {
     // Nile Fossil Exhibit: museum hall opening onto the river
-    floor = new THREE.Mesh(new THREE.PlaneGeometry(18, 18), std(0x6b5a45, { roughness: 0.6 }));
+    floor = new THREE.Mesh(panorama ? new THREE.CircleGeometry(9, 48) : new THREE.PlaneGeometry(18, 18), std(panorama ? 0xc9a676 : 0x6b5a45, { roughness: 0.7 }));
     floor.rotation.x = -Math.PI / 2;
     floor.receiveShadow = true;
     g.add(floor);
@@ -191,7 +196,7 @@ export function buildZone(id: ZoneId): { group: THREE.Group; floor: THREE.Mesh }
       m.position.set(x, 3, z);
       m.rotation.y = ry;
       m.receiveShadow = true;
-      g.add(m);
+      far.add(m);
     };
     wall(18, 0, -9, 0);
     wall(18, -9, 0, Math.PI / 2);
@@ -201,32 +206,32 @@ export function buildZone(id: ZoneId): { group: THREE.Group; floor: THREE.Mesh }
       const col = new THREE.Mesh(new THREE.CylinderGeometry(0.3, 0.35, 6, 16), std(0xd8c7a3));
       col.position.set(i * 2, 3, 9);
       col.castShadow = true;
-      g.add(col);
+      far.add(col);
     }
     const ceiling = new THREE.Mesh(new THREE.PlaneGeometry(18, 18), std(0x4a3d2e, { side: THREE.DoubleSide }));
     ceiling.rotation.x = Math.PI / 2;
     ceiling.position.y = 6;
-    g.add(ceiling);
+    far.add(ceiling);
     // River beyond the columns
     const river = new THREE.Mesh(new THREE.PlaneGeometry(200, 30), std(0x2e6f8e, { roughness: 0.15, metalness: 0.3 }));
     river.rotation.x = -Math.PI / 2;
     river.position.set(0, -0.3, 28);
     river.userData.water = true;
-    g.add(river);
+    far.add(river);
     const bank = new THREE.Mesh(new THREE.PlaneGeometry(200, 12), std(0x7a6a4a));
     bank.rotation.x = -Math.PI / 2;
     bank.position.set(0, -0.05, 14);
-    g.add(bank);
+    far.add(bank);
     for (let i = 0; i < 60; i++) {
       const reed = new THREE.Mesh(new THREE.CylinderGeometry(0.01, 0.02, 1.2 + Math.random(), 4), std(0x6f8f3a));
       reed.position.set(-30 + Math.random() * 60, 0.6, 12.5 + Math.random() * 3);
       reed.rotation.z = (Math.random() - 0.5) * 0.3;
-      g.add(reed);
+      far.add(reed);
     }
     for (let i = 0; i < 8; i++) {
       const p = palm(4 + Math.random() * 2);
       p.position.set(-24 + i * 7 + Math.random() * 2, 0, 16 + Math.random() * 3);
-      g.add(p);
+      far.add(p);
     }
     // Glass display cases
     for (const [x, z] of [[-3, -2.5], [3, -2.5], [-3, 2.5], [3, 2.5]]) {
@@ -249,8 +254,28 @@ export function buildZone(id: ZoneId): { group: THREE.Group; floor: THREE.Mesh }
       }
     }
     spine.position.set(0, 4.4, -1);
-    g.add(spine);
+    far.add(spine); // hangs from the hall ceiling; the panorama has its own whale poster
   }
 
+  // With a panorama, fade the floor's rim so it blends into the backdrop's ground
+  if (panorama) {
+    floor.geometry.dispose();
+    floor.geometry = new THREE.CircleGeometry(11, 64);
+    const c = document.createElement('canvas');
+    c.width = c.height = 256;
+    const ctx = c.getContext('2d')!;
+    const grad = ctx.createRadialGradient(128, 128, 0, 128, 128, 128);
+    grad.addColorStop(0, '#fff');
+    grad.addColorStop(0.68, '#fff');
+    grad.addColorStop(1, '#000');
+    ctx.fillStyle = grad;
+    ctx.fillRect(0, 0, 256, 256);
+    const mat = floor.material as THREE.MeshStandardMaterial;
+    mat.alphaMap = new THREE.CanvasTexture(c);
+    mat.transparent = true;
+    mat.depthWrite = false;
+  }
+
+  if (!panorama) g.add(far);
   return { group: g, floor };
 }

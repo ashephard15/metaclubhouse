@@ -41,7 +41,8 @@ Desktop-only development: `npm run dev` → http://localhost:5173.
 ## Art assets
 - **`public/assets/inspection/`**: inspection images shown beside the field note on a hinged frame, aspect ratio preserved: `egypt_bastet_statue.png`, `egypt_hieroglyphic_tablet.png`, `egypt_nile_discovery.png` (the three Egypt discoveries) and `egypt_welcome_sign.png` (welcome sign). Set an artifact's `inspectImage` in `src/data/artifacts.ts` to add more.
 - **`public/assets/references/`**: environment references used as flat framed pictures (not spherical panoramas): `treehouse_hub_reference.png`, `egypt_arrival_reference.png`.
-- **`public/assets/cutouts/`** *(still needed)*: transparent PNGs named by each artifact's `cutout` field (e.g. `explorer-compass.png`). A matching PNG automatically replaces that artifact's 3D stand-in model. The three set-piece discoveries keep their 3D models.
+- **`public/assets/cutouts/`**: transparent PNGs for all 12 quiz artifacts (trimmed, max 1024 px). They replace the stand-in 3D models in the world and show as backpack thumbnails. The three set-piece Egypt discoveries keep their 3D models.
+- **`public/assets/panoramas/`**: equirectangular 360° backdrops, one per zone (`treehouse_hub_360.png`, `egypt_marketplace_portal_360.png`, `nile_fossil_marketplace_360.png`). Each wraps a 40 m sphere around the play area. The floor, stands, artifacts, portals and signs stay real 3D geometry inside it, and distant 3D scenery is turned off. Remove a zone's `panorama` field in `src/data/artifacts.ts` to switch back to the all-3D scenery, or change `panoramaYaw` to rotate the view. These are 1774×887; versions at 4096×2048 or larger will look much sharper in a headset.
 - **`meta-store-submission/`**: Meta Horizon Store covers, icon and concept screenshots. Replace the screenshots with real in-game captures before submitting, because Meta requires screenshots to show actual app content without extra overlays.
 
 ## Testing status

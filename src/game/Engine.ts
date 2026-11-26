@@ -62,6 +62,8 @@ export class Engine {
   private hemi: THREE.HemisphereLight;
   private sun: THREE.DirectionalLight;
   private textureLoader = new THREE.TextureLoader();
+  private panoSphere: THREE.Mesh | null = null;
+  private panoTextures = new Map<string, THREE.Texture>();
 
   // desktop input
   private keys = new Set<string>();
@@ -191,13 +193,16 @@ export class Engine {
     this.infoNodes = [];
 
     const z = ZONES[id];
+    const pano = !!z.panorama;
     this.scene.background = new THREE.Color(z.sky);
-    this.scene.fog = new THREE.Fog(z.fog, id === 'nile' ? 20 : 30, id === 'egypt' ? 160 : 90);
-    this.hemi.color.set(id === 'nile' ? 0xfff0dd : 0xffffff);
-    this.hemi.intensity = id === 'nile' ? 1.0 : 1.2;
-    this.sun.intensity = id === 'nile' ? 0.6 : id === 'egypt' ? 3 : 2.2;
+    this.scene.fog = pano ? null : new THREE.Fog(z.fog, id === 'nile' ? 20 : 30, id === 'egypt' ? 160 : 90);
+    const indoorDim = id === 'nile' && !pano;
+    this.hemi.color.set(id === 'treehouse' && pano ? 0xffe2b8 : indoorDim ? 0xfff0dd : 0xffffff);
+    this.hemi.intensity = indoorDim ? 1.0 : 1.3;
+    this.sun.intensity = indoorDim ? 0.6 : id === 'treehouse' && pano ? 1.4 : id === 'egypt' ? 3 : 2.4;
+    this.setPanorama(z.panorama, z.panoramaYaw ?? 0);
 
-    const { group, floor } = buildZone(id);
+    const { group, floor } = buildZone(id, pano);
     this.floor = floor;
     this.zoneGroup.add(group);
 
@@ -222,6 +227,40 @@ export class Engine {
       this.camera.rotation.set(this.pitch, this.yaw, 0);
     }
     this.setState({ zone: id, inspecting: null, backpackOpen: false });
+  }
+
+  /**
+   * 360° backdrop on a large inward-facing sphere centred on the play area at eye height.
+   * The 3D floor and all interactive objects sit inside it, so WebXR depth and movement are preserved.
+   */
+  private setPanorama(path: string | undefined, yawDeg: number) {
+    if (!path) { if (this.panoSphere) this.panoSphere.visible = false; return; }
+    if (!this.panoSphere) {
+      const geo = new THREE.SphereGeometry(40, 64, 32);
+      geo.scale(-1, 1, 1);
+      this.panoSphere = new THREE.Mesh(geo, new THREE.MeshBasicMaterial({ fog: false, toneMapped: false, depthWrite: false }));
+      this.panoSphere.renderOrder = -1;
+      this.panoSphere.position.set(0, 1.6, 0);
+      this.scene.add(this.panoSphere);
+    }
+    const sphere = this.panoSphere;
+    // Equirect centre (u = 0.5) lands on -x for an inverted sphere; turn it to face -z (toward the portals).
+    sphere.rotation.y = -Math.PI / 2 + THREE.MathUtils.degToRad(yawDeg);
+    const apply = (tex: THREE.Texture) => {
+      (sphere.material as THREE.MeshBasicMaterial).map = tex;
+      (sphere.material as THREE.MeshBasicMaterial).needsUpdate = true;
+      sphere.visible = true;
+    };
+    sphere.visible = false;
+    const cached = this.panoTextures.get(path);
+    if (cached) { apply(cached); return; }
+    this.textureLoader.load(`${BASE}assets/${path}`, (tex) => {
+      tex.colorSpace = THREE.SRGBColorSpace;
+      tex.anisotropy = 8;
+      tex.generateMipmaps = true;
+      this.panoTextures.set(path, tex);
+      if (ZONES[this.state.zone].panorama === path) apply(tex);
+    });
   }
 
   private spawnArtifact(a: Artifact) {
@@ -257,7 +296,7 @@ export class Engine {
     // Stand under the artifact, styled per zone
     const standH = a.standHeight ?? (a.zone === 'nile' ? 0.8 : 0.75);
     if (standH > 0) {
-      const style = { treehouse: [0x8e5a2b, 0.7, false], egypt: [0xc2a26a, 0.6, false], nile: [0x3d3328, 0.6, true] } as const;
+      const style = { treehouse: [0x8e5a2b, 0.7, false], egypt: [0xc2a26a, 0.6, false], nile: [0x9a7a52, 0.6, true] } as const;
       const [color, width, glass] = style[a.zone];
       const stand = pedestal(color, standH, width, glass && !a.static);
       stand.position.set(a.position[0], 0, a.position[2]);
