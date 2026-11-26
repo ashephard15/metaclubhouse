@@ -3,7 +3,7 @@ import { VRButton } from 'three/examples/jsm/webxr/VRButton.js';
 import { XRControllerModelFactory } from 'three/examples/jsm/webxr/XRControllerModelFactory.js';
 import { XRHandModelFactory } from 'three/examples/jsm/webxr/XRHandModelFactory.js';
 import { ARTIFACTS, ZONES, artifactsInZone, infoPointsInZone, propsInZone, type Artifact, type InfoPoint, type ZoneId } from '../data/artifacts';
-import { buildArtifactModel, pedestal, std } from './models';
+import { buildArtifactModel, pedestal, roundTable, std } from './models';
 import { buildZone, PORTALS, SPAWN, WALK_RADIUS } from './zones';
 import { InfoPanel } from './InfoPanel';
 import { BackpackPanel } from './BackpackPanel';
@@ -356,6 +356,7 @@ export class Engine {
       this.dynamicGroup.add(stand);
     }
 
+    const onTable = a.zone === 'treehouse' && standH === 0;
     const box = new THREE.Box3().setFromObject(model);
     const size = box.getSize(new THREE.Vector3());
     const ring = new THREE.Mesh(
@@ -363,13 +364,13 @@ export class Engine {
       new THREE.MeshBasicMaterial({ color: 0xf7c95c }),
     );
     ring.rotation.x = Math.PI / 2;
-    ring.position.set(a.position[0], a.zone === 'treehouse' ? 0.03 : standH + 0.02, a.position[2]);
-    if (a.zone === 'treehouse') ring.scale.setScalar(1.5);
+    ring.position.set(a.position[0], onTable ? 0.79 : standH + 0.02, a.position[2]);
+    if (onTable) ring.scale.setScalar(0.65);
 
     const label = makeLabel(a.name, 0.8);
     label.mesh.position.set(0, Math.max(box.max.y, 0.23) + 0.1, 0); // model is in node-local space here
     label.mesh.userData.billboard = true;
-    node.add(label.mesh);
+    if (!onTable) node.add(label.mesh); // tabletop items rely on their glow ring; the name shows when selected
     this.labels.push(label);
 
     this.dynamicGroup.add(node, ring);
@@ -435,21 +436,25 @@ export class Engine {
     const wood = std(0x6b4423, { roughness: 0.95 });
     let face: THREE.Mesh;
     if (p.kind === 'jar') {
-      // The Mission Jar picture on the log stool picture
-      const stool = this.sprite('props/stool.png', 0.62, { billboard: true, shadow: true });
-      const jar = this.sprite('props/mission-jar.png', 0.5, { billboard: true });
-      jar.position.y = 0.5;
-      node.add(stool, jar);
-      const glow = new THREE.PointLight(0xc9a0ff, 1.2, 1.5);
-      glow.position.y = 0.8;
+      // Round table in the middle of the room; the Mission Jar stands raised in its centre
+      node.add(roundTable(1.1, 0.78));
+      const riser = new THREE.Mesh(new THREE.CylinderGeometry(0.24, 0.27, 0.16, 24), std(0x8e5a2b, { roughness: 0.9 }));
+      riser.position.set(0, 0.86, -0.4);
+      riser.castShadow = true;
+      node.add(riser);
+      const jar = this.sprite('props/mission-jar.png', 0.6, { billboard: true });
+      jar.position.set(0, 0.94, -0.4);
+      node.add(jar);
+      const glow = new THREE.PointLight(0xc9a0ff, 1.5, 2.2);
+      glow.position.set(0, 1.2, -0.4);
       node.add(glow);
       const tag = makeLabel('Mission Jar', 0.6);
-      tag.mesh.position.set(0, 1.25, 0);
+      tag.mesh.position.set(0, 1.68, -0.4);
       tag.mesh.userData.billboard = true;
       this.labels.push(tag);
       node.add(tag.mesh);
-      face = new THREE.Mesh(new THREE.CylinderGeometry(0.3, 0.3, 1.0, 12), new THREE.MeshBasicMaterial({ visible: false }));
-      face.position.y = 0.5;
+      face = new THREE.Mesh(new THREE.CylinderGeometry(0.28, 0.28, 0.65, 12), new THREE.MeshBasicMaterial({ visible: false }));
+      face.position.set(0, 1.25, -0.4);
     } else if (p.kind === 'board') {
       // How to Play: the sign picture hanging between two wooden posts
       const wood = std(0x6b4423, { roughness: 0.95 });

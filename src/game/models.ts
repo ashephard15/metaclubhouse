@@ -332,4 +332,31 @@ export function stump(h = 0.75, r = 0.36): THREE.Group {
   return g;
 }
 
+/** Thick round log-slice table on four log legs, like the Clubhouse concept art. Top surface at y = h. */
+export function roundTable(r = 1.1, h = 0.78): THREE.Group {
+  barkTex ??= makeBark();
+  ringsTex ??= makeRings();
+  const g = new THREE.Group();
+  const bark = barkTex.clone();
+  bark.needsUpdate = true;
+  bark.repeat.set(6, 0.4);
+  const side = new THREE.MeshStandardMaterial({ map: bark, roughness: 1, emissive: 0x3a1e0c });
+  const top = new THREE.MeshStandardMaterial({ map: ringsTex, roughness: 0.7, emissive: 0x5a3414, emissiveIntensity: 0.9 });
+  const slab = new THREE.Mesh(new THREE.CylinderGeometry(r, r * 0.97, 0.16, 48), [side, top, side]);
+  slab.position.y = h - 0.08;
+  slab.castShadow = slab.receiveShadow = true;
+  g.add(slab);
+  const legBark = barkTex.clone();
+  legBark.needsUpdate = true;
+  legBark.repeat.set(1, 1);
+  for (let i = 0; i < 4; i++) {
+    const a = (i / 4) * Math.PI * 2 + Math.PI / 4;
+    const leg = new THREE.Mesh(new THREE.CylinderGeometry(0.11, 0.14, h - 0.16, 12), new THREE.MeshStandardMaterial({ map: legBark, roughness: 1 }));
+    leg.position.set(Math.cos(a) * r * 0.55, (h - 0.16) / 2, Math.sin(a) * r * 0.55);
+    leg.castShadow = true;
+    g.add(leg);
+  }
+  return g;
+}
+
 export { std };
