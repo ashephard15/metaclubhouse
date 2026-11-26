@@ -42,7 +42,7 @@ export class CanvasPlane {
     this.texture = new THREE.CanvasTexture(this.canvas);
     this.texture.colorSpace = THREE.SRGBColorSpace;
     this.texture.anisotropy = 4;
-    const mat = new THREE.MeshBasicMaterial({ map: this.texture, transparent: true, depthTest: true });
+    const mat = new THREE.MeshBasicMaterial({ map: this.texture, transparent: true, depthTest: true, fog: false, toneMapped: false });
     this.mesh = new THREE.Mesh(new THREE.PlaneGeometry(metresW, (metresW * pxH) / pxW), mat);
   }
 

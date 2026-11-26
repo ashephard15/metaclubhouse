@@ -2,11 +2,12 @@ import * as THREE from 'three';
 import { VRButton } from 'three/examples/jsm/webxr/VRButton.js';
 import { XRControllerModelFactory } from 'three/examples/jsm/webxr/XRControllerModelFactory.js';
 import { XRHandModelFactory } from 'three/examples/jsm/webxr/XRHandModelFactory.js';
-import { ARTIFACTS, ZONES, artifactsInZone, type Artifact, type ZoneId } from '../data/artifacts';
-import { buildArtifactModel } from './models';
+import { ARTIFACTS, ZONES, artifactsInZone, infoPointsInZone, type Artifact, type InfoPoint, type ZoneId } from '../data/artifacts';
+import { buildArtifactModel, pedestal, std } from './models';
 import { buildZone, PORTALS, SPAWN, WALK_RADIUS } from './zones';
 import { InfoPanel } from './InfoPanel';
-import { makeLabel, type CanvasPlane } from './canvasText';
+import { BackpackPanel } from './BackpackPanel';
+import { CanvasPlane, makeLabel, roundRect, wrapText } from './canvasText';
 import { Sfx } from './sfx';
 
 export interface GameState {
@@ -14,11 +15,13 @@ export interface GameState {
   discovered: string[];
   inXR: boolean;
   inspecting: string | null;
+  backpackOpen: boolean;
 }
 
 type Hit =
   | { kind: 'artifact'; artifact: Artifact; point: THREE.Vector3 }
   | { kind: 'portal'; target: ZoneId; point: THREE.Vector3 }
+  | { kind: 'info'; info: InfoPoint; point: THREE.Vector3 }
   | { kind: 'panel'; object: THREE.Object3D; point: THREE.Vector3 }
   | { kind: 'floor'; point: THREE.Vector3 };
 
@@ -45,6 +48,10 @@ export class Engine {
   private dynamicGroup = new THREE.Group();
   private floor: THREE.Mesh | null = null;
   private artifactNodes: { artifact: Artifact; node: THREE.Group; ring: THREE.Mesh; baseY: number }[] = [];
+  private infoNodes: THREE.Object3D[] = [];
+  private flames: THREE.Object3D[] = [];
+  private backpack = new BackpackPanel();
+  private buttonWasDown = new Map<XRInputSource, boolean>();
   private portalNodes: { target: ZoneId; node: THREE.Group; swirl: THREE.Mesh }[] = [];
   private labels: CanvasPlane[] = [];
   private panel = new InfoPanel();
@@ -72,7 +79,7 @@ export class Engine {
   private listeners = new Set<(s: GameState) => void>();
 
   constructor(private container: HTMLElement) {
-    this.state = { zone: 'treehouse', discovered: this.loadProgress(), inXR: false, inspecting: null };
+    this.state = { zone: 'treehouse', discovered: this.loadProgress(), inXR: false, inspecting: null, backpackOpen: false };
 
     this.renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: 'high-performance' });
     this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
@@ -90,7 +97,7 @@ export class Engine {
     this.camera.rotation.order = 'YXZ';
     this.camera.position.set(0, 1.6, 0);
     this.rig.add(this.camera);
-    this.scene.add(this.rig, this.zoneGroup, this.dynamicGroup, this.panel.group);
+    this.scene.add(this.rig, this.zoneGroup, this.dynamicGroup, this.panel.group, this.backpack.group);
 
     this.hemi = new THREE.HemisphereLight(0xffffff, 0x444422, 1.2);
     this.sun = new THREE.DirectionalLight(0xffffff, 2.2);
@@ -112,7 +119,8 @@ export class Engine {
       this.camera.position.set(0, 0, 0);
       this.camera.rotation.set(0, 0, 0);
       this.panel.hide();
-      this.setState({ inXR: true, inspecting: null });
+      this.backpack.hide();
+      this.setState({ inXR: true, inspecting: null, backpackOpen: false });
     });
     this.renderer.xr.addEventListener('sessionend', () => {
       this.camera.position.set(0, 1.6, 0);
@@ -157,6 +165,7 @@ export class Engine {
   // ---------------- zones ----------------
   travelTo(zone: ZoneId) {
     this.panel.hide();
+    this.backpack.hide();
     this.loadZone(zone);
     this.sfx.portal();
   }
@@ -179,6 +188,7 @@ export class Engine {
     this.labels = [];
     this.artifactNodes = [];
     this.portalNodes = [];
+    this.infoNodes = [];
 
     const z = ZONES[id];
     this.scene.background = new THREE.Color(z.sky);
@@ -199,6 +209,9 @@ export class Engine {
 
     for (const a of artifactsInZone(id)) this.spawnArtifact(a);
     for (const p of PORTALS[id]) this.spawnPortal(p.target, p.position);
+    for (const p of infoPointsInZone(id)) this.spawnInfoPoint(p);
+    this.flames = [];
+    group.traverse((o) => { if (o.userData.flame) this.flames.push(o); });
 
     // reset player
     this.rig.position.copy(SPAWN);
@@ -208,12 +221,13 @@ export class Engine {
       this.pitch = -0.08;
       this.camera.rotation.set(this.pitch, this.yaw, 0);
     }
-    this.setState({ zone: id, inspecting: null });
+    this.setState({ zone: id, inspecting: null, backpackOpen: false });
   }
 
   private spawnArtifact(a: Artifact) {
     const node = new THREE.Group();
     node.position.set(...a.position);
+    if (a.static) node.lookAt(SPAWN.x, a.position[1], SPAWN.z);
     const model = buildArtifactModel(a.shape, a.color);
     node.add(model);
     node.userData.artifact = a;
@@ -240,15 +254,27 @@ export class Engine {
       () => { /* no cutout yet — keep the 3D stand-in */ },
     );
 
+    // Stand under the artifact, styled per zone
+    const standH = a.standHeight ?? (a.zone === 'nile' ? 0.8 : 0.75);
+    if (standH > 0) {
+      const style = { treehouse: [0x8e5a2b, 0.7, false], egypt: [0xc2a26a, 0.6, false], nile: [0x3d3328, 0.6, true] } as const;
+      const [color, width, glass] = style[a.zone];
+      const stand = pedestal(color, standH, width, glass && !a.static);
+      stand.position.set(a.position[0], 0, a.position[2]);
+      this.dynamicGroup.add(stand);
+    }
+
+    const box = new THREE.Box3().setFromObject(model);
+    const size = box.getSize(new THREE.Vector3());
     const ring = new THREE.Mesh(
-      new THREE.TorusGeometry(0.32, 0.015, 8, 48),
+      new THREE.TorusGeometry(Math.max(0.32, Math.max(size.x, size.z) * 0.6), 0.015, 8, 48),
       new THREE.MeshBasicMaterial({ color: 0xf7c95c }),
     );
     ring.rotation.x = Math.PI / 2;
-    ring.position.set(a.position[0], a.position[1] - 0.22, a.position[2]);
+    ring.position.set(a.position[0], standH + 0.02, a.position[2]);
 
     const label = makeLabel(a.name, 0.8);
-    label.mesh.position.set(0, 0.42, 0);
+    label.mesh.position.set(0, box.max.y - a.position[1] + 0.2, 0);
     label.mesh.userData.billboard = true;
     node.add(label.mesh);
     this.labels.push(label);
@@ -308,12 +334,103 @@ export class Engine {
     this.portalNodes.push({ target, node, swirl });
   }
 
+  /** Welcome sign (painted parchment) or field-guide easel (flat reference image, aspect preserved). */
+  private spawnInfoPoint(p: InfoPoint) {
+    const node = new THREE.Group();
+    node.position.set(...p.position);
+    node.lookAt(SPAWN.x, 0, SPAWN.z);
+    const wood = std(0x6b4423, { roughness: 0.95 });
+    let face: THREE.Mesh;
+    if (p.kind === 'sign') {
+      for (const x of [-0.5, 0.5]) {
+        const post = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.06, 1.6, 8), wood);
+        post.position.set(x, 0.8, 0);
+        node.add(post);
+      }
+      const parchment = new CanvasPlane(768, 560, 1.0);
+      parchment.draw((ctx, w, h) => {
+        ctx.fillStyle = '#e9cf98';
+        roundRect(ctx, 0, 0, w, h, 24);
+        ctx.fill();
+        ctx.strokeStyle = '#6b4423';
+        ctx.lineWidth = 14;
+        roundRect(ctx, 7, 7, w - 14, h - 14, 20);
+        ctx.stroke();
+        ctx.fillStyle = '#2b1a0c';
+        ctx.textAlign = 'center';
+        ctx.font = 'bold 64px Georgia, serif';
+        ctx.fillText('Welcome', w / 2, 110);
+        ctx.fillText('Time Explorer!', w / 2, 190);
+        ctx.font = '42px Georgia, serif';
+        wrapText(ctx, "You've traveled to Ancient Egypt (c. 1500 BCE).", w - 120).forEach((l, i) => ctx.fillText(l, w / 2, 290 + i * 54));
+        ctx.font = 'bold 80px Georgia, serif';
+        ctx.fillText('☥', w / 2, 480);
+      });
+      this.labels.push(parchment);
+      face = parchment.mesh;
+      face.position.set(0, 1.25, 0.06);
+      const back = new THREE.Mesh(new THREE.BoxGeometry(1.06, 0.78, 0.06), wood);
+      back.position.set(0, 1.25, 0.02);
+      node.add(back);
+    } else {
+      // Easel with the reference picture
+      for (const [x, rz] of [[-0.45, 0.08], [0.45, -0.08]]) {
+        const leg = new THREE.Mesh(new THREE.BoxGeometry(0.06, 2.0, 0.06), wood);
+        leg.position.set(x, 1.0, 0);
+        leg.rotation.z = rz;
+        node.add(leg);
+      }
+      const back = new THREE.Mesh(new THREE.BoxGeometry(0.06, 1.9, 0.06), wood);
+      back.position.set(0, 0.95, -0.35);
+      back.rotation.x = -0.2;
+      node.add(back);
+      face = new THREE.Mesh(new THREE.PlaneGeometry(1.2, 0.68), new THREE.MeshBasicMaterial({ color: 0x3a2a1a }));
+      face.position.set(0, 1.35, 0.05);
+      const frame = new THREE.Mesh(new THREE.BoxGeometry(1.28, 0.76, 0.04), std(0xd4af37, { metalness: 0.7, roughness: 0.35 }));
+      frame.position.set(0, 1.35, 0.02);
+      node.add(frame);
+      this.textureLoader.load(`${BASE}assets/${p.image}`, (tex) => {
+        tex.colorSpace = THREE.SRGBColorSpace;
+        const img = tex.image as HTMLImageElement;
+        const w = 1.2, h = w / (img.width / img.height);
+        face.geometry.dispose();
+        face.geometry = new THREE.PlaneGeometry(w, h);
+        frame.scale.set(1, (h + 0.08) / 0.76, 1);
+        (face.material as THREE.MeshBasicMaterial).dispose();
+        face.material = new THREE.MeshBasicMaterial({ map: tex, toneMapped: false });
+      });
+      const tag = makeLabel(p.title.replace(' Field Guide', ''), 1.1);
+      tag.mesh.position.set(0, 2.2, 0.05);
+      this.labels.push(tag);
+      node.add(tag.mesh);
+    }
+    face.userData.infoPoint = p;
+    node.add(face);
+    node.traverse((o) => { if (o !== node) o.userData.infoPoint = p; });
+    this.dynamicGroup.add(node);
+    this.infoNodes.push(node);
+  }
+
+  // ---------------- backpack ----------------
+  toggleBackpack() {
+    if (this.state.backpackOpen) { this.backpack.hide(); this.setState({ backpackOpen: false }); return; }
+    this.panel.hide();
+    // In the headset the backpack is a 3D board; on desktop the React HUD drawer shows it.
+    if (this.renderer.xr.isPresenting) {
+      const { pos, dir } = this.headPose();
+      this.backpack.show(this.state.discovered, pos, dir);
+    }
+    this.sfx.click();
+    this.setState({ backpackOpen: true, inspecting: null });
+  }
+
   // ---------------- interaction ----------------
   private interactTargets(): THREE.Object3D[] {
-    const t: THREE.Object3D[] = [...this.panel.interactiveMeshes];
-    if (!this.panel.group.visible) {
+    const t: THREE.Object3D[] = [...this.panel.interactiveMeshes, ...this.backpack.interactiveMeshes];
+    if (!this.panel.isOpen && !this.backpack.isOpen) {
       for (const n of this.artifactNodes) t.push(n.node);
       for (const p of this.portalNodes) t.push(p.swirl);
+      t.push(...this.infoNodes);
     }
     if (this.floor) t.push(this.floor);
     return t;
@@ -325,7 +442,8 @@ export class Engine {
     const hits = this.raycaster.intersectObjects(this.interactTargets(), true);
     for (const h of hits) {
       let o: THREE.Object3D | null = h.object;
-      if (o.userData.panelAction) return { kind: 'panel', object: o, point: h.point };
+      if (o.userData.panelAction || o.userData.backpackAction) return { kind: 'panel', object: o, point: h.point };
+      if (o.userData.infoPoint) return { kind: 'info', info: o.userData.infoPoint, point: h.point };
       if (o.userData.portal) return { kind: 'portal', target: o.userData.portal, point: h.point };
       while (o) {
         if (o.userData.artifact) return { kind: 'artifact', artifact: o.userData.artifact, point: h.point };
@@ -347,7 +465,9 @@ export class Engine {
   private activate(hit: Hit | null, src: XRInputSource | null) {
     if (!hit) return;
     this.sfx.unlock();
-    if (hit.kind === 'panel') {
+    if (hit.kind === 'panel' && hit.object.userData.backpackAction) {
+      if (hit.object.userData.backpackAction === 'close') this.toggleBackpack();
+    } else if (hit.kind === 'panel') {
       const r = this.panel.activate(hit.object);
       if (r === 'correct') this.discover(this.panel.artifact!);
       else if (r === 'wrong') { this.sfx.wrong(); this.pulse(src, 0.6, 120); }
@@ -355,20 +475,28 @@ export class Engine {
     } else if (hit.kind === 'artifact') {
       const { pos, dir } = this.headPose();
       this.panel.open(hit.artifact, this.state.discovered.includes(hit.artifact.id));
-      this.panel.placeInFront(pos, dir);
+      this.panel.placeInFront(pos, dir, !!hit.artifact.inspectImage);
       this.sfx.click();
       this.pulse(src, 0.4, 60);
       this.setState({ inspecting: hit.artifact.id });
+    } else if (hit.kind === 'info') {
+      const { pos, dir } = this.headPose();
+      this.panel.openInfo(hit.info);
+      this.panel.placeInFront(pos, dir, true);
+      this.sfx.click();
+      this.pulse(src, 0.4, 60);
+      this.setState({ inspecting: hit.info.id });
     } else if (hit.kind === 'portal') {
       this.travelTo(hit.target);
-    } else if (hit.kind === 'floor' && this.renderer.xr.isPresenting && !this.panel.group.visible) {
+    } else if (hit.kind === 'floor' && this.renderer.xr.isPresenting && !this.panel.isOpen && !this.backpack.isOpen) {
       this.teleportTo(hit.point);
     }
   }
 
   closePanel() {
     this.panel.hide();
-    this.setState({ inspecting: null });
+    this.backpack.hide();
+    this.setState({ inspecting: null, backpackOpen: false });
   }
 
   private discover(a: Artifact) {
@@ -457,11 +585,12 @@ export class Engine {
       c.line.scale.z = hit ? origin.distanceTo(hit.point) : 5;
       const lm = c.line.material as THREE.LineBasicMaterial;
       lm.color.set(hit && hit.kind !== 'floor' ? 0x7ee08a : 0xf7c95c);
-      c.reticle.visible = hit?.kind === 'floor' && !this.panel.group.visible;
+      c.reticle.visible = hit?.kind === 'floor' && !this.panel.isOpen && !this.backpack.isOpen;
       if (hit?.kind === 'floor') c.reticle.position.copy(hit.point).setY(0.01);
       if (hit?.kind === 'panel') panelHovers.push(hit.object);
     }
     this.panel.setHovered(panelHovers[0] ?? null);
+    this.backpack.setHovered(panelHovers[0] ?? null);
 
     // thumbsticks
     const session = this.renderer.xr.getSession();
@@ -469,7 +598,12 @@ export class Engine {
     this.snapCooldown -= dt;
     for (const src of session.inputSources) {
       const gp = src.gamepad;
-      if (!gp || gp.axes.length < 4) continue;
+      if (!gp) continue;
+      // B (right) or Y (left) toggles the backpack
+      const down = !!gp.buttons[5]?.pressed;
+      if (down && !this.buttonWasDown.get(src)) this.toggleBackpack();
+      this.buttonWasDown.set(src, down);
+      if (gp.axes.length < 4) continue;
       const x = gp.axes[2], y = gp.axes[3];
       if (src.handedness === 'left') {
         if (Math.abs(x) > 0.15 || Math.abs(y) > 0.15) {
@@ -525,6 +659,7 @@ export class Engine {
     window.addEventListener('keydown', (e) => {
       this.keys.add(e.code);
       if (e.code === 'Escape') this.closePanel();
+      if (e.code === 'KeyB' || e.code === 'KeyI') this.toggleBackpack();
     });
     window.addEventListener('keyup', (e) => this.keys.delete(e.code));
     window.addEventListener('blur', () => this.keys.clear());
@@ -544,6 +679,7 @@ export class Engine {
     this.desktopHover = hit && hit.kind !== 'floor' ? hit : null;
     this.renderer.domElement.style.cursor = this.desktopHover ? 'pointer' : this.dragging ? 'grabbing' : 'grab';
     this.panel.setHovered(hit?.kind === 'panel' ? hit.object : null);
+    this.backpack.setHovered(hit?.kind === 'panel' ? hit.object : null);
   }
 
   // ---------------- loop ----------------
@@ -560,10 +696,12 @@ export class Engine {
     for (const n of this.artifactNodes) {
       n.node.position.y = n.baseY + Math.sin(t * 1.6 + n.baseY * 5) * 0.04;
       const model = n.node.children[0];
-      if (model && !model.userData.billboard) model.rotation.y = t * 0.6;
+      if (n.artifact.static) { n.node.position.y = n.baseY; }
+      else if (model && !model.userData.billboard) model.rotation.y = t * 0.6;
       n.ring.scale.setScalar(1 + Math.sin(t * 3) * 0.05);
     }
     for (const p of this.portalNodes) p.swirl.rotation.z = -t * 1.2;
+    this.flames.forEach((f, i) => f.scale.set(1, 1 + Math.sin(t * 9 + i * 2) * 0.12, 1));
     this.dynamicGroup.traverse((o) => {
       if (o.userData.billboard) {
         const wp = new THREE.Vector3();

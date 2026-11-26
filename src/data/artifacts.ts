@@ -3,7 +3,8 @@ export type ZoneId = 'treehouse' | 'egypt' | 'nile';
 export type ArtifactShape =
   | 'compass' | 'map' | 'lantern' | 'journal'
   | 'scarab' | 'ankh' | 'papyrus' | 'canopic'
-  | 'ammonite' | 'crocodile' | 'trilobite' | 'tooth';
+  | 'ammonite' | 'crocodile' | 'trilobite' | 'tooth'
+  | 'bastet' | 'stela' | 'mapTable';
 
 export interface QuizQuestion {
   question: string;
@@ -20,6 +21,12 @@ export interface Artifact {
   cutout: string;
   position: [number, number, number];
   color: number;
+  /** Optional image in public/assets/ shown beside the field note, aspect ratio preserved. */
+  inspectImage?: string;
+  /** Pedestal/table height under the artifact (default 0.75). Use 0 for objects that stand on the ground. */
+  standHeight?: number;
+  /** Large set-piece discoveries stay still instead of spinning/bobbing. */
+  static?: boolean;
   fieldNote: string;
   quiz: QuizQuestion;
 }
@@ -31,8 +38,8 @@ export interface Zone {
   sky: number;
   ground: number;
   fog: number;
-  /** Optional reference image in public/assets/references/ shown in the inspection panel. */
-  reference: string;
+  /** Optional environment reference image (flat, not a panorama) in public/assets/references/. */
+  reference?: string;
 }
 
 export const ZONES: Record<ZoneId, Zone> = {
@@ -43,16 +50,16 @@ export const ZONES: Record<ZoneId, Zone> = {
     sky: 0x87c5e8,
     ground: 0x4f7a3a,
     fog: 0xa8d4ec,
-    reference: 'treehouse-hub.png',
+    reference: 'references/treehouse_hub_reference.png',
   },
   egypt: {
     id: 'egypt',
     name: 'Ancient Egypt Arrival',
-    subtitle: 'Giza Plateau, about 2560 BCE',
+    subtitle: 'Along the Nile, about 1500 BCE',
     sky: 0xf2c27b,
     ground: 0xd9b26f,
     fog: 0xf5d39a,
-    reference: 'egypt-arrival.png',
+    reference: 'references/egypt_arrival_reference.png',
   },
   nile: {
     id: 'nile',
@@ -61,7 +68,6 @@ export const ZONES: Record<ZoneId, Zone> = {
     sky: 0x2c3e50,
     ground: 0x6b5a45,
     fog: 0x34495e,
-    reference: 'nile-fossil-exhibit.png',
   },
 };
 
@@ -117,6 +123,27 @@ export const ARTIFACTS: Artifact[] = [
     fieldNote: 'During mummification, organs were stored in four canopic jars, each protected by one of the four Sons of Horus.',
     quiz: { question: 'How many canopic jars were usually used?', options: ['Two', 'Four', 'Ten'], answerIndex: 1 },
   },
+  {
+    id: 'bastet-statue', name: 'Bastet Cat Statue', zone: 'egypt', shape: 'bastet',
+    cutout: 'bastet-statue.png', position: [-5.6, 0.95, -0.6], color: 0x1c1c22, static: true,
+    inspectImage: 'inspection/egypt_bastet_statue.png',
+    fieldNote: 'Bastet was an Egyptian goddess shown as a cat or a woman with a cat\'s head. She protected homes and families. Egyptians loved cats because they kept mice and snakes away from stored grain.',
+    quiz: { question: 'Why did ancient Egyptians value cats so much?', options: ['They pulled carts', 'They protected grain from mice and snakes', 'They guarded the pyramids at night'], answerIndex: 1 },
+  },
+  {
+    id: 'hieroglyphic-tablet', name: 'Hieroglyphic Tablet', zone: 'egypt', shape: 'stela',
+    cutout: 'hieroglyphic-tablet.png', position: [5.6, 0.95, -0.6], color: 0xd9b77a, standHeight: 0.4, static: true,
+    inspectImage: 'inspection/egypt_hieroglyphic_tablet.png',
+    fieldNote: 'A carved stone slab like this is called a stela. Egyptians used stelae to honor gods and people and to record events. Hieroglyphs can run left, right or down. You read toward the faces of the people and animals.',
+    quiz: { question: 'How do you know which way to read hieroglyphs?', options: ['Always right to left', 'Read toward the faces of people and animals', 'Start from the bottom'], answerIndex: 1 },
+  },
+  {
+    id: 'nile-discovery', name: 'Nile Scroll Map', zone: 'egypt', shape: 'mapTable',
+    cutout: 'nile-discovery.png', position: [0, 0, -3.4], color: 0xe2cc93, standHeight: 0, static: true,
+    inspectImage: 'inspection/egypt_nile_discovery.png',
+    fieldNote: 'Every summer the Nile flooded its banks. When the water went down it left rich black mud that was perfect for farming. Egyptians called their land Kemet, the Black Land, after that soil.',
+    quiz: { question: 'Why was the Nile\'s yearly flood so important?', options: ['It left rich soil for growing crops', 'It washed away the pyramids', 'It made the desert colder'], answerIndex: 0 },
+  },
 
   // ---------- Nile Fossil Exhibit ----------
   {
@@ -144,5 +171,36 @@ export const ARTIFACTS: Artifact[] = [
     quiz: { question: 'What surprising feature did early whale Basilosaurus have?', options: ['Wings', 'Tiny back legs', 'A shell'], answerIndex: 1 },
   },
 ];
+
+/** Non-quiz points of interest: signs and reference posters. Inspecting shows the image + text. */
+export interface InfoPoint {
+  id: string;
+  zone: ZoneId;
+  kind: 'sign' | 'poster';
+  title: string;
+  body: string;
+  image: string;
+  position: [number, number, number];
+}
+
+export const INFO_POINTS: InfoPoint[] = [
+  {
+    id: 'egypt-welcome', zone: 'egypt', kind: 'sign', title: 'Welcome, Time Explorer!',
+    body: 'You\'ve traveled to Ancient Egypt, about 1500 BCE. Find the glowing artifacts, answer their questions and fill your backpack. Look for the Bastet statue, the hieroglyphic tablet and the scroll map by the Nile.',
+    image: 'inspection/egypt_welcome_sign.png', position: [-2.0, 0, 0.4],
+  },
+  {
+    id: 'treehouse-guide', zone: 'treehouse', kind: 'poster', title: 'Tree House Hub Field Guide',
+    body: 'Base camp for every Time Explorer. Collect the four explorer tools here, then step through a time portal to Ancient Egypt or the Nile Fossil Exhibit. Everything you collect goes in your backpack.',
+    image: 'references/treehouse_hub_reference.png', position: [-4.6, 0, -3.6],
+  },
+  {
+    id: 'egypt-guide', zone: 'egypt', kind: 'poster', title: 'Ancient Egypt Field Guide',
+    body: 'Along the Nile you\'ll find markets, temples, the Sphinx and the pyramids. There are seven artifacts to discover here, including three special discoveries in the market and by the river.',
+    image: 'references/egypt_arrival_reference.png', position: [5.4, 0, 3.4],
+  },
+];
+
+export const infoPointsInZone = (zone: ZoneId) => INFO_POINTS.filter((p) => p.zone === zone);
 
 export const artifactsInZone = (zone: ZoneId) => ARTIFACTS.filter((a) => a.zone === zone);

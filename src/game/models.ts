@@ -113,7 +113,61 @@ export function buildArtifactModel(shape: ArtifactShape, color: number): THREE.O
       add(new THREE.CylinderGeometry(0.06, 0.045, 0.1, 16), std(0x8d7b68), [0.02, -0.15, 0], [0, 0, 0.2]);
       break;
     }
+    case 'bastet': {
+      // Seated black cat statue on a gold base; spans roughly y -0.2 … 0.45
+      const stone = std(color, { roughness: 0.35, metalness: 0.2 });
+      add(new THREE.CylinderGeometry(0.17, 0.18, 0.08, 32), gold(), [0, -0.16, 0]);
+      const body = add(new THREE.SphereGeometry(0.13, 24, 16), stone, [0, -0.02, 0.01]);
+      body.scale.set(0.9, 1.25, 1.1);
+      const chest = add(new THREE.SphereGeometry(0.08, 20, 14), stone, [0, 0.12, -0.05]);
+      chest.scale.set(1, 1.6, 0.9);
+      add(new THREE.SphereGeometry(0.075, 20, 16), stone, [0, 0.29, -0.06]);
+      add(new THREE.ConeGeometry(0.032, 0.06, 12), stone, [0, 0.26, -0.13], [-Math.PI / 2, 0, 0]);
+      for (const sx of [-1, 1]) {
+        add(new THREE.ConeGeometry(0.03, 0.1, 4), stone, [sx * 0.045, 0.39, -0.05]);
+        add(new THREE.CylinderGeometry(0.022, 0.025, 0.2, 10), stone, [sx * 0.05, -0.04, -0.09]);
+        add(new THREE.SphereGeometry(0.012, 8, 6), std(0xf1c40f, { emissive: 0x6b4f00 }), [sx * 0.028, 0.305, -0.125]);
+      }
+      add(new THREE.TorusGeometry(0.065, 0.016, 8, 24), std(0x2a5db0, { metalness: 0.4 }), [0, 0.18, -0.05], [Math.PI / 2.4, 0, 0]);
+      add(new THREE.TorusGeometry(0.075, 0.008, 8, 24), gold(), [0, 0.16, -0.05], [Math.PI / 2.4, 0, 0]);
+      const tail = new THREE.CatmullRomCurve3([new THREE.Vector3(0, -0.12, 0.13), new THREE.Vector3(0.1, -0.14, 0.05), new THREE.Vector3(0.08, -0.14, -0.08)]);
+      add(new THREE.TubeGeometry(tail, 16, 0.018, 8), stone);
+      break;
+    }
+    case 'stela': {
+      // Round-topped carved stone tablet; spans roughly y -0.55 … 0.5
+      const sand = std(color, { roughness: 0.95, flatShading: true });
+      add(new THREE.BoxGeometry(0.7, 0.85, 0.12), sand, [0, -0.12, 0]);
+      add(new THREE.CylinderGeometry(0.35, 0.35, 0.12, 24, 1, false, Math.PI / 2, Math.PI), sand, [0, 0.305, 0], [Math.PI / 2, 0, 0]);
+      const carve = std(0x8a6a3a, { roughness: 1 });
+      // seated figure + glyph blocks in low relief on the front face
+      add(new THREE.BoxGeometry(0.08, 0.22, 0.02), carve, [-0.12, -0.05, -0.065]);
+      add(new THREE.SphereGeometry(0.04, 12, 8), carve, [-0.12, 0.1, -0.065]);
+      add(new THREE.BoxGeometry(0.16, 0.04, 0.02), carve, [-0.1, -0.2, -0.065]);
+      for (let i = 0; i < 4; i++) add(new THREE.BoxGeometry(0.09, 0.07, 0.02), carve, [0.17, 0.2 - i * 0.12, -0.065]);
+      const ankh = std(0xd4af37, { metalness: 0.7, roughness: 0.3, emissive: 0x3a2a00 });
+      add(new THREE.TorusGeometry(0.03, 0.01, 6, 16), ankh, [0.0, 0.35, -0.07]);
+      add(new THREE.BoxGeometry(0.08, 0.016, 0.016), ankh, [0.0, 0.31, -0.07]);
+      add(new THREE.BoxGeometry(0.016, 0.09, 0.016), ankh, [0.0, 0.26, -0.07]);
+      break;
+    }
+    case 'mapTable': {
+      // Riverside table (stands on the ground) with an unrolled Nile map, a scarab and a pot of reed pens
+      const wood = std(0x7a4f2a, { roughness: 0.9 });
+      add(new THREE.BoxGeometry(1.1, 0.06, 0.7), wood, [0, 0.72, 0]);
+      for (const [x, z] of [[-0.48, -0.28], [0.48, -0.28], [-0.48, 0.28], [0.48, 0.28]]) add(new THREE.BoxGeometry(0.07, 0.7, 0.07), wood, [x, 0.35, z]);
+      add(new THREE.BoxGeometry(0.62, 0.005, 0.4), std(color, { roughness: 1 }), [0.05, 0.755, 0]);
+      add(new THREE.BoxGeometry(0.5, 0.006, 0.05), std(0x3a8fc4), [0.05, 0.757, 0.03], [0, 0.4, 0]);
+      add(new THREE.ConeGeometry(0.05, 0.05, 4), std(0xc9a25a), [0.18, 0.78, -0.08], [0, Math.PI / 4, 0]);
+      for (const x of [-0.27, 0.37]) add(new THREE.CylinderGeometry(0.03, 0.03, 0.44, 14), std(color), [x, 0.78, 0], [Math.PI / 2, 0, 0]);
+      const scarab = add(new THREE.SphereGeometry(0.045, 16, 12), std(0x1abc9c, { metalness: 0.6, roughness: 0.25 }), [-0.38, 0.775, 0.22]);
+      scarab.scale.set(1, 0.5, 1.3);
+      add(new THREE.CylinderGeometry(0.05, 0.04, 0.1, 14), std(0x2a5db0), [-0.4, 0.8, -0.2]);
+      for (let i = 0; i < 4; i++) add(new THREE.CylinderGeometry(0.005, 0.005, 0.18, 4), std(0xd9b77a), [-0.4 + (i - 1.5) * 0.012, 0.88, -0.2], [0.15 * (i - 1.5), 0, 0.1]);
+      break;
+    }
   }
+  if (shape === 'bastet' || shape === 'stela') g.rotation.y = Math.PI; // carved/face side toward +z
   return g;
 }
 

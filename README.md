@@ -6,15 +6,15 @@ A Vite + React + TypeScript + Three.js WebXR game for **Meta Quest 3** (and desk
 | Zone | Artifacts |
 |---|---|
 | **Tree House Hub**: a wooden deck high in the forest canopy | Explorer's Compass, Time Map, Oil Lantern, Field Journal |
-| **Ancient Egypt Arrival**: Giza plateau with pyramids, sphinx and obelisks | Golden Scarab, Ankh, Papyrus Scroll, Canopic Jar |
+| **Ancient Egypt Arrival**: the Nile c. 1500 BCE, with pyramids, Sphinx, market stall, stone path and torch-lit portals | Golden Scarab, Ankh, Papyrus Scroll, Canopic Jar, plus three discoveries with inspection art: **Bastet Cat Statue**, **Hieroglyphic Tablet**, **Nile Scroll Map** |
 | **Nile Fossil Exhibit**: museum hall open to the river | Ammonite, Crocodile Skull, Trilobite, Basilosaurus Tooth |
 
-Glowing portals at the back of each zone link to the other two. Progress is saved in the browser.
+Glowing portals at the back of each zone link to the other two. Answering an artifact's quiz adds it to your **Backpack** (15 items). Progress is saved in the browser. A welcome sign in Egypt and field-guide easels in the Tree House and Egypt open info panels with their artwork.
 
 ## Controls
-**Quest 3:** point a controller and pull the trigger to inspect artifacts, answer quizzes, use portals, or teleport by pointing at the floor. Left stick = smooth walk, right stick = snap-turn. Hand-tracking pinch also works.
+**Quest 3:** point a controller and pull the trigger to inspect artifacts, answer quizzes, use portals, or teleport by pointing at the floor. Left stick = smooth walk, right stick = snap-turn, **B or Y = backpack**. Hand-tracking pinch also works.
 
-**Desktop:** drag to look around, use WASD or the arrow keys to walk, click to interact, and press Esc to close a panel. The top-right buttons jump between zones.
+**Desktop:** drag to look around, use WASD or the arrow keys to walk, click to interact, press **B** for the backpack and Esc to close a panel. The top-right buttons jump between zones.
 
 ## Play on your Quest 3
 **Option A: GitHub Pages (easiest).** In the repo go to *Settings → Pages → Build and deployment → Source: GitHub Actions*. Every push to `main` then deploys automatically to
@@ -38,8 +38,11 @@ Desktop-only development: `npm run dev` → http://localhost:5173.
 - `src/components/VRSceneCanvas.tsx`, `src/App.tsx`: React mount and desktop HUD
 - `src/data/artifacts.ts`: artifact metadata, field notes, quizzes, cutout filenames
 
-## Adding the art assets
-The game runs without any image files. Each artifact shows a built-in 3D model until its art is added.
-- **`public/assets/cutouts/`**: drop transparent PNGs here using the `cutout` filename listed for each artifact in `src/data/artifacts.ts` (e.g. `explorer-compass.png`). A matching PNG automatically replaces that artifact's 3D model, keeping its aspect ratio.
-- **`public/assets/references/`**: zone reference images (`treehouse-hub.png`, `egypt-arrival.png`, `nile-fossil-exhibit.png`).
-- **`meta-store-submission/`**: Meta Horizon Store images (3000×900 hero, 2560×1440 landscape, 1440×1440 square, 1008×1440 portrait, 512×512 icon, 5× 2560×1440 screenshots).
+## Art assets
+- **`public/assets/inspection/`**: inspection images shown beside the field note on a hinged frame, aspect ratio preserved: `egypt_bastet_statue.png`, `egypt_hieroglyphic_tablet.png`, `egypt_nile_discovery.png` (the three Egypt discoveries) and `egypt_welcome_sign.png` (welcome sign). Set an artifact's `inspectImage` in `src/data/artifacts.ts` to add more.
+- **`public/assets/references/`**: environment references used as flat framed pictures (not spherical panoramas): `treehouse_hub_reference.png`, `egypt_arrival_reference.png`.
+- **`public/assets/cutouts/`** *(still needed)*: transparent PNGs named by each artifact's `cutout` field (e.g. `explorer-compass.png`). A matching PNG automatically replaces that artifact's 3D stand-in model. The three set-piece discoveries keep their 3D models.
+- **`meta-store-submission/`**: Meta Horizon Store covers, icon and concept screenshots. Replace the screenshots with real in-game captures before submitting, because Meta requires screenshots to show actual app content without extra overlays.
+
+## Testing status
+Tested in desktop Chrome: all zones, inspection panels, quizzes, backpack and saved progress. The WebXR paths (controllers, hands, teleport, snap-turn, the in-headset backpack and its B/Y button) are written against the WebXR API but have **not yet been tested on a Quest headset**.

@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import type { ZoneId } from '../data/artifacts';
-import { palm, pedestal, pyramid, std, tree } from './models';
+import { palm, pyramid, std, tree } from './models';
 
 export interface PortalDef { target: ZoneId; position: [number, number, number] }
 
@@ -63,12 +63,6 @@ export function buildZone(id: ZoneId): { group: THREE.Group; floor: THREE.Mesh }
       t.position.set(Math.cos(a) * r, -8, Math.sin(a) * r);
       g.add(t);
     }
-    // Tables for artifacts
-    for (const [x, z] of [[-2.2, -2.4], [2.2, -2.4], [-2.8, 1.2], [2.8, 1.2]]) {
-      const p = pedestal(0x8e5a2b, 0.75, 0.7);
-      p.position.set(x, 0, z);
-      g.add(p);
-    }
   } else if (id === 'egypt') {
     floor = new THREE.Mesh(new THREE.CircleGeometry(120, 48), std(0xd9b26f, { roughness: 1 }));
     floor.rotation.x = -Math.PI / 2;
@@ -115,11 +109,72 @@ export function buildZone(id: ZoneId): { group: THREE.Group; floor: THREE.Mesh }
       p.rotation.y = Math.random() * 6;
       g.add(p);
     }
-    for (const [x, z] of [[-3, -3], [3, -3], [-3.5, 2], [3.5, 2]]) {
-      const p = pedestal(0xc2a26a, 0.75, 0.55);
-      p.position.set(x, 0, z);
-      g.add(p);
+    // Stone path from spawn to the portals (matches the reference art)
+    for (let i = 0; i < 26; i++) {
+      const slab = new THREE.Mesh(new THREE.BoxGeometry(0.55 + Math.random() * 0.25, 0.04, 0.5 + Math.random() * 0.2), std(0xcfb48a, { roughness: 1 }));
+      slab.position.set(((i % 3) - 1) * 0.72 + (Math.random() - 0.5) * 0.1, 0.02, 5 - Math.floor(i / 3) * 1.25);
+      slab.rotation.y = (Math.random() - 0.5) * 0.2;
+      slab.receiveShadow = true;
+      g.add(slab);
     }
+    // Torches flanking the portals
+    for (const x of [-3, 3]) {
+      const stand = new THREE.Mesh(new THREE.CylinderGeometry(0.12, 0.18, 1.1, 8), std(0x2a5db0, { metalness: 0.3 }));
+      stand.position.set(x, 0.55, -6.2);
+      g.add(stand);
+      const bowl = new THREE.Mesh(new THREE.CylinderGeometry(0.25, 0.12, 0.18, 12), std(0xd4af37, { metalness: 0.8 }));
+      bowl.position.set(x, 1.18, -6.2);
+      g.add(bowl);
+      const flame = new THREE.Mesh(new THREE.ConeGeometry(0.16, 0.42, 10), new THREE.MeshBasicMaterial({ color: 0xffa233 }));
+      flame.position.set(x, 1.48, -6.2);
+      flame.userData.flame = true;
+      g.add(flame);
+    }
+    // Market stall with striped awning (left side, behind the Bastet statue)
+    const stall = new THREE.Group();
+    const stallWood = std(0x6e4826);
+    for (const [x, z] of [[-1, -0.6], [1, -0.6], [-1, 0.6], [1, 0.6]]) {
+      const post = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.05, 2.3, 6), stallWood);
+      post.position.set(x, 1.15, z);
+      stall.add(post);
+    }
+    for (let i = 0; i < 8; i++) {
+      const stripe = new THREE.Mesh(new THREE.BoxGeometry(0.27, 0.03, 1.5), std(i % 2 ? 0xf2e6cf : 0xb83a2e));
+      stripe.position.set(-0.95 + i * 0.27, 2.35 - Math.abs(i - 3.5) * 0.03, 0);
+      stall.add(stripe);
+    }
+    const counter = new THREE.Mesh(new THREE.BoxGeometry(2.0, 0.8, 0.6), std(0x8e5a2b));
+    counter.position.set(0, 0.4, 0.3);
+    stall.add(counter);
+    for (let i = 0; i < 5; i++) {
+      const pot = new THREE.Mesh(new THREE.SphereGeometry(0.14, 12, 10), std([0x2a5db0, 0xd9b77a, 0xb83a2e][i % 3]));
+      pot.scale.y = 1.3;
+      pot.position.set(-0.8 + i * 0.4, 0.98, 0.3);
+      stall.add(pot);
+    }
+    stall.position.set(-7.4, 0, -1.2);
+    stall.rotation.y = Math.PI / 2;
+    g.add(stall);
+    // The Nile beyond the right side, with a sailboat
+    const nile = new THREE.Mesh(new THREE.PlaneGeometry(30, 200), std(0x2e7fb0, { roughness: 0.15, metalness: 0.3 }));
+    nile.rotation.x = -Math.PI / 2;
+    nile.position.set(26, 0.02, 0);
+    g.add(nile);
+    const boat = new THREE.Group();
+    const hull = new THREE.Mesh(new THREE.CylinderGeometry(0.6, 0.3, 6, 10, 1, false, 0, Math.PI), std(0x7a4f2a));
+    hull.rotation.set(0, 0, Math.PI / 2);
+    hull.rotation.x = Math.PI;
+    boat.add(hull);
+    const mast = new THREE.Mesh(new THREE.CylinderGeometry(0.06, 0.06, 5, 6), std(0x5b3a1e));
+    mast.position.y = 2.5;
+    boat.add(mast);
+    const sail = new THREE.Mesh(new THREE.PlaneGeometry(3, 3.4), std(0xf5ecd7, { side: THREE.DoubleSide }));
+    sail.position.set(0, 3, 0.1);
+    boat.add(sail);
+    boat.position.set(20, 0.3, -12);
+    boat.rotation.y = Math.PI / 2;
+    g.add(boat);
+
     // Sun
     const sun = new THREE.Mesh(new THREE.SphereGeometry(6, 24, 16), new THREE.MeshBasicMaterial({ color: 0xfff1b8 }));
     sun.position.set(60, 55, -110);
@@ -175,9 +230,6 @@ export function buildZone(id: ZoneId): { group: THREE.Group; floor: THREE.Mesh }
     }
     // Glass display cases
     for (const [x, z] of [[-3, -2.5], [3, -2.5], [-3, 2.5], [3, 2.5]]) {
-      const p = pedestal(0x3d3328, 0.8, 0.6, true);
-      p.position.set(x, 0, z);
-      g.add(p);
       const spot = new THREE.SpotLight(0xfff2d6, 12, 7, 0.45, 0.6, 1.5);
       spot.position.set(x, 5.8, z);
       spot.target.position.set(x, 1, z);
