@@ -101,11 +101,11 @@ export function buildZone(id: ZoneId, panorama = false): { group: THREE.Group; f
       ob.position.set(x, 3, -9);
       ob.rotation.y = Math.PI / 4;
       ob.castShadow = true;
-      g.add(ob);
+      far.add(ob);
       const tip = new THREE.Mesh(new THREE.ConeGeometry(0.3, 0.6, 4), std(0xd4af37, { metalness: 0.8 }));
       tip.position.set(x, 6.3, -9);
       tip.rotation.y = Math.PI / 4;
-      g.add(tip);
+      far.add(tip);
     }
     for (let i = 0; i < 10; i++) {
       const p = palm(3.5 + Math.random() * 2);
@@ -120,20 +120,20 @@ export function buildZone(id: ZoneId, panorama = false): { group: THREE.Group; f
       slab.position.set(((i % 3) - 1) * 0.72 + (Math.random() - 0.5) * 0.1, 0.02, 5 - Math.floor(i / 3) * 1.25);
       slab.rotation.y = (Math.random() - 0.5) * 0.2;
       slab.receiveShadow = true;
-      g.add(slab);
+      far.add(slab);
     }
     // Torches flanking the portals
     for (const x of [-3, 3]) {
       const stand = new THREE.Mesh(new THREE.CylinderGeometry(0.12, 0.18, 1.1, 8), std(0x2a5db0, { metalness: 0.3 }));
       stand.position.set(x, 0.55, -6.2);
-      g.add(stand);
+      far.add(stand);
       const bowl = new THREE.Mesh(new THREE.CylinderGeometry(0.25, 0.12, 0.18, 12), std(0xd4af37, { metalness: 0.8 }));
       bowl.position.set(x, 1.18, -6.2);
-      g.add(bowl);
+      far.add(bowl);
       const flame = new THREE.Mesh(new THREE.ConeGeometry(0.16, 0.42, 10), new THREE.MeshBasicMaterial({ color: 0xffa233 }));
       flame.position.set(x, 1.48, -6.2);
       flame.userData.flame = true;
-      g.add(flame);
+      far.add(flame);
     }
     // Market stall with striped awning (left side, behind the Bastet statue)
     const stall = new THREE.Group();
@@ -159,7 +159,7 @@ export function buildZone(id: ZoneId, panorama = false): { group: THREE.Group; f
     }
     stall.position.set(-7.4, 0, -1.2);
     stall.rotation.y = Math.PI / 2;
-    g.add(stall);
+    far.add(stall);
     // The Nile beyond the right side, with a sailboat
     const nile = new THREE.Mesh(new THREE.PlaneGeometry(30, 200), std(0x2e7fb0, { roughness: 0.15, metalness: 0.3 }));
     nile.rotation.x = -Math.PI / 2;
@@ -270,10 +270,9 @@ export function buildZone(id: ZoneId, panorama = false): { group: THREE.Group; f
     grad.addColorStop(1, '#000');
     ctx.fillStyle = grad;
     ctx.fillRect(0, 0, 256, 256);
-    const mat = floor.material as THREE.MeshStandardMaterial;
-    mat.alphaMap = new THREE.CanvasTexture(c);
-    mat.transparent = true;
-    mat.depthWrite = false;
+    // Invisible floor: the panorama's painted ground shows through, the floor only catches shadows
+    (floor.material as THREE.Material).dispose();
+    floor.material = new THREE.ShadowMaterial({ opacity: 0.28, transparent: true, depthWrite: false });
   }
 
   if (!panorama) g.add(far);

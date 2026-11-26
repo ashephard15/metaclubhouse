@@ -186,7 +186,7 @@ export const ARTIFACTS: Artifact[] = [
 export interface InfoPoint {
   id: string;
   zone: ZoneId;
-  kind: 'sign' | 'poster' | 'jar';
+  kind: 'sign' | 'poster' | 'jar' | 'board';
   title: string;
   body: string;
   image?: string;
@@ -200,9 +200,9 @@ export const INFO_POINTS: InfoPoint[] = [
     image: 'inspection/egypt_welcome_sign.png', position: [-2.0, 0, 0.4],
   },
   {
-    id: 'treehouse-guide', zone: 'treehouse', kind: 'poster', title: 'Clubhouse Field Guide',
-    body: 'Base camp for every Time Explorer. Collect the four explorer tools here, then step through a time portal to Ancient Egypt or the Nile Fossil Exhibit. Everything you collect goes in your backpack.',
-    image: 'references/treehouse_hub_reference.png', position: [-4.6, 0, -3.6],
+    id: 'how-to-play', zone: 'treehouse', kind: 'board', title: 'How to Play',
+    body: '1. Walk and look around. 2. Find the glowing artifacts. 3. Select one and answer its question. 4. Every right answer goes in your backpack. 5. Step into a portal to travel to Ancient Egypt or the Nile Fossil Exhibit. Collect all 15 to become a Master Time Explorer!',
+    image: 'props/how-to-play-sign.png', position: [-4.4, 0, -3.4],
   },
   {
     id: 'egypt-guide', zone: 'egypt', kind: 'poster', title: 'Ancient Egypt Field Guide',
@@ -216,6 +216,42 @@ INFO_POINTS.push({
   body: 'Your missions, Time Explorer: 1) Collect the 4 explorer tools here in the Clubhouse. 2) Travel to Ancient Egypt and find 7 artifacts, including the Bastet statue, the hieroglyphic tablet and the Nile scroll map. 3) Visit the Nile Fossil Exhibit and find 4 fossils. Answer each question to fill your backpack!',
   position: [0, 0, -0.4],
 });
+
+/** Decorative cut-out props (transparent PNGs in public/assets/props/). Heights in metres. */
+export interface Prop {
+  image: string;
+  zone: ZoneId;
+  position: [number, number, number];
+  height: number;
+  /** Lies flat on the floor (rugs). Height is then the width. */
+  flat?: boolean;
+  /** Fixed facing toward the spawn point instead of turning to face the player. */
+  fixed?: boolean;
+}
+
+export const PROPS: Prop[] = [
+  // Clubhouse
+  { zone: 'treehouse', image: 'compass-rug', position: [0, 0.012, -0.4], height: 2.6, flat: true },
+  { zone: 'treehouse', image: 'telescope', position: [4.7, 0, -3.2], height: 1.5 },
+  { zone: 'treehouse', image: 'potted-plant', position: [-5.4, 0, -0.6], height: 1.2 },
+  { zone: 'treehouse', image: 'potted-plant', position: [5.6, 0, 0.9], height: 1.1 },
+  { zone: 'treehouse', image: 'cauldron', position: [-4.9, 0, 2.2], height: 0.9 },
+  { zone: 'treehouse', image: 'owl-statue', position: [-3.3, 0, -5.3], height: 1.0 },
+  { zone: 'treehouse', image: 'rock-cluster', position: [3.5, 0, -5.4], height: 0.6 },
+  { zone: 'treehouse', image: 'gem-cluster', position: [4.0, 0, -4.9], height: 0.5 },
+  { zone: 'treehouse', image: 'basket-1', position: [5.2, 0, 2.8], height: 0.55 },
+  { zone: 'treehouse', image: 'basket-2', position: [-5.7, 0, 3.4], height: 0.6 },
+  { zone: 'treehouse', image: 'purple-blanket', position: [5.7, 0, -1.6], height: 0.6 },
+  { zone: 'treehouse', image: 'compass-pillow', position: [5.3, 0, -1.1], height: 0.45 },
+  { zone: 'treehouse', image: 'sealed-scroll', position: [0.95, 0, -0.1], height: 0.35 },
+  { zone: 'treehouse', image: 'time-key', position: [-0.9, 0, -0.1], height: 0.4 },
+  { zone: 'treehouse', image: 'hourglass-medallion', position: [0, 4.5, -6.6], height: 0.8, fixed: true },
+  { zone: 'treehouse', image: 'treehouse-name-sign', position: [0, 2.85, -6.6], height: 1.5, fixed: true },
+  // Egypt
+  { zone: 'egypt', image: 'pharaoh-plaque', position: [-5.2, 0, -3.6], height: 1.4 },
+];
+
+export const propsInZone = (zone: ZoneId) => PROPS.filter((p) => p.zone === zone);
 
 export const infoPointsInZone = (zone: ZoneId) => INFO_POINTS.filter((p) => p.zone === zone);
 

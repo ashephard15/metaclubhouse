@@ -2,8 +2,8 @@ import * as THREE from 'three';
 import { VRButton } from 'three/examples/jsm/webxr/VRButton.js';
 import { XRControllerModelFactory } from 'three/examples/jsm/webxr/XRControllerModelFactory.js';
 import { XRHandModelFactory } from 'three/examples/jsm/webxr/XRHandModelFactory.js';
-import { ARTIFACTS, ZONES, artifactsInZone, infoPointsInZone, type Artifact, type InfoPoint, type ZoneId } from '../data/artifacts';
-import { buildArtifactModel, pedestal, std, stump } from './models';
+import { ARTIFACTS, ZONES, artifactsInZone, infoPointsInZone, propsInZone, type Artifact, type InfoPoint, type ZoneId } from '../data/artifacts';
+import { buildArtifactModel, pedestal, std } from './models';
 import { buildZone, PORTALS, SPAWN, WALK_RADIUS } from './zones';
 import { InfoPanel } from './InfoPanel';
 import { BackpackPanel } from './BackpackPanel';
@@ -207,10 +207,18 @@ export class Engine {
     this.zoneGroup.add(group);
 
     // Zone title sign
-    const title = makeLabel(z.name, 2.6);
-    title.mesh.position.set(0, 3.5, -6.9);
-    this.labels.push(title);
-    this.dynamicGroup.add(title.mesh);
+    if (id !== 'treehouse') {
+      const title = makeLabel(z.name, 2.6);
+      title.mesh.position.set(0, 3.5, -6.9);
+      this.labels.push(title);
+      this.dynamicGroup.add(title.mesh);
+    }
+    for (const p of propsInZone(id)) {
+      const g = this.sprite(`props/${p.image}.png`, p.height, { flat: p.flat, billboard: !p.fixed && !p.flat, shadow: !p.fixed && !p.flat && p.position[1] === 0 });
+      g.position.set(...p.position);
+      if (p.fixed) g.lookAt(SPAWN.x, p.position[1], SPAWN.z);
+      this.dynamicGroup.add(g);
+    }
 
     for (const a of artifactsInZone(id)) this.spawnArtifact(a);
     for (const p of PORTALS[id]) this.spawnPortal(p.target, p.position);
@@ -263,6 +271,51 @@ export class Engine {
     });
   }
 
+  private blobTex: THREE.Texture | null = null;
+
+  /** A transparent PNG standing on the floor (bottom-anchored), or lying flat. Keeps the image's aspect ratio. */
+  private sprite(path: string, height: number, opts: { flat?: boolean; billboard?: boolean; shadow?: boolean } = {}): THREE.Group {
+    const g = new THREE.Group();
+    if (opts.billboard) g.userData.billboard = true;
+    if (opts.shadow) {
+      if (!this.blobTex) {
+        const c = document.createElement('canvas');
+        c.width = c.height = 128;
+        const ctx = c.getContext('2d')!;
+        const grad = ctx.createRadialGradient(64, 64, 0, 64, 64, 64);
+        grad.addColorStop(0, 'rgba(0,0,0,0.45)');
+        grad.addColorStop(1, 'rgba(0,0,0,0)');
+        ctx.fillStyle = grad;
+        ctx.fillRect(0, 0, 128, 128);
+        this.blobTex = new THREE.CanvasTexture(c);
+      }
+      const blob = new THREE.Mesh(new THREE.PlaneGeometry(1, 1), new THREE.MeshBasicMaterial({ map: this.blobTex, transparent: true, depthWrite: false }));
+      blob.rotation.x = -Math.PI / 2;
+      blob.position.y = 0.006;
+      blob.scale.set(height * 0.8, height * 0.45, 1);
+      blob.userData.noBillboard = true;
+      g.add(blob);
+    }
+    this.textureLoader.load(`${BASE}assets/${path}`, (tex) => {
+      tex.colorSpace = THREE.SRGBColorSpace;
+      tex.anisotropy = 8;
+      const img = tex.image as HTMLImageElement;
+      const aspect = img.width / img.height;
+      const mat = new THREE.MeshBasicMaterial({ map: tex, transparent: true, alphaTest: 0.04, side: THREE.DoubleSide, toneMapped: false });
+      let plane: THREE.Mesh;
+      if (opts.flat) {
+        plane = new THREE.Mesh(new THREE.PlaneGeometry(height, height / aspect), mat);
+        plane.rotation.x = -Math.PI / 2;
+      } else {
+        plane = new THREE.Mesh(new THREE.PlaneGeometry(height * aspect, height), mat);
+        plane.position.y = height / 2;
+      }
+      plane.userData.infoPoint = g.userData.infoPoint;
+      g.add(plane);
+    });
+    return g;
+  }
+
   private spawnArtifact(a: Artifact) {
     const node = new THREE.Group();
     node.position.set(...a.position);
@@ -298,7 +351,7 @@ export class Engine {
     if (standH > 0) {
       const style = { treehouse: [0x8e5a2b, 0.7, false], egypt: [0xc2a26a, 0.6, false], nile: [0x9a7a52, 0.6, true] } as const;
       const [color, width, glass] = style[a.zone];
-      const stand = a.zone === 'treehouse' ? stump(standH, 0.36) : pedestal(color, standH, width, glass && !a.static);
+      const stand = a.zone === 'treehouse' ? this.sprite('props/tree-stump.png', standH + 0.12, { billboard: true, shadow: true }) : pedestal(color, standH, width, glass && !a.static);
       stand.position.set(a.position[0], 0, a.position[2]);
       this.dynamicGroup.add(stand);
     }
@@ -310,10 +363,11 @@ export class Engine {
       new THREE.MeshBasicMaterial({ color: 0xf7c95c }),
     );
     ring.rotation.x = Math.PI / 2;
-    ring.position.set(a.position[0], standH + 0.02, a.position[2]);
+    ring.position.set(a.position[0], a.zone === 'treehouse' ? 0.03 : standH + 0.02, a.position[2]);
+    if (a.zone === 'treehouse') ring.scale.setScalar(1.5);
 
     const label = makeLabel(a.name, 0.8);
-    label.mesh.position.set(0, box.max.y - a.position[1] + 0.2, 0);
+    label.mesh.position.set(0, Math.max(box.max.y, 0.23) + 0.1, 0); // model is in node-local space here
     label.mesh.userData.billboard = true;
     node.add(label.mesh);
     this.labels.push(label);
@@ -381,40 +435,38 @@ export class Engine {
     const wood = std(0x6b4423, { roughness: 0.95 });
     let face: THREE.Mesh;
     if (p.kind === 'jar') {
-      // Small round table with a glass jar of mission scrolls
-      const table = new THREE.Mesh(new THREE.CylinderGeometry(0.42, 0.42, 0.06, 32), wood);
-      table.position.y = 0.72;
-      const leg = stump(0.69, 0.17);
-      node.add(table, leg);
-      const glass = new THREE.Mesh(
-        new THREE.CylinderGeometry(0.11, 0.12, 0.24, 24, 1, true),
-        new THREE.MeshStandardMaterial({ color: 0xd9c8ff, transparent: true, opacity: 0.3, roughness: 0.05, side: THREE.DoubleSide, depthWrite: false }),
-      );
-      glass.position.y = 0.87;
-      const neck = new THREE.Mesh(new THREE.CylinderGeometry(0.07, 0.1, 0.05, 20, 1, true), glass.material);
-      neck.position.y = 1.01;
-      const cork = new THREE.Mesh(new THREE.CylinderGeometry(0.065, 0.06, 0.05, 16), std(0xb98a52, { roughness: 1 }));
-      cork.position.y = 1.055;
-      node.add(glass, neck, cork);
-      for (let i = 0; i < 6; i++) {
-        const scroll = new THREE.Mesh(new THREE.CylinderGeometry(0.016, 0.016, 0.18, 10), std(0xf2e6cf));
-        const a = (i / 6) * Math.PI * 2;
-        scroll.position.set(Math.cos(a) * 0.05, 0.86, Math.sin(a) * 0.05);
-        scroll.rotation.set(Math.sin(a) * 0.25, 0, Math.cos(a) * 0.25);
-        const tie = new THREE.Mesh(new THREE.TorusGeometry(0.017, 0.004, 6, 12), std(0xb83a2e));
-        tie.rotation.x = Math.PI / 2;
-        scroll.add(tie);
-        node.add(scroll);
-      }
+      // The Mission Jar picture on the log stool picture
+      const stool = this.sprite('props/stool.png', 0.62, { billboard: true, shadow: true });
+      const jar = this.sprite('props/mission-jar.png', 0.5, { billboard: true });
+      jar.position.y = 0.5;
+      node.add(stool, jar);
       const glow = new THREE.PointLight(0xc9a0ff, 1.2, 1.5);
-      glow.position.y = 0.9;
+      glow.position.y = 0.8;
       node.add(glow);
       const tag = makeLabel('Mission Jar', 0.6);
-      tag.mesh.position.set(0, 1.3, 0);
+      tag.mesh.position.set(0, 1.25, 0);
       tag.mesh.userData.billboard = true;
       this.labels.push(tag);
       node.add(tag.mesh);
-      face = glass;
+      face = new THREE.Mesh(new THREE.CylinderGeometry(0.3, 0.3, 1.0, 12), new THREE.MeshBasicMaterial({ visible: false }));
+      face.position.y = 0.5;
+    } else if (p.kind === 'board') {
+      // How to Play: the sign picture hanging between two wooden posts
+      const wood = std(0x6b4423, { roughness: 0.95 });
+      for (const x of [-0.55, 0.55]) {
+        const post = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.06, 2.1, 8), wood);
+        post.position.set(x, 1.05, -0.03);
+        node.add(post);
+      }
+      const bar = new THREE.Mesh(new THREE.CylinderGeometry(0.04, 0.04, 1.2, 8), wood);
+      bar.rotation.z = Math.PI / 2;
+      bar.position.set(0, 2.05, -0.03);
+      node.add(bar);
+      const board = this.sprite(p.image!, 1.45);
+      board.position.y = 0.55;
+      node.add(board);
+      face = new THREE.Mesh(new THREE.PlaneGeometry(1.1, 1.45), new THREE.MeshBasicMaterial({ visible: false }));
+      face.position.set(0, 1.28, 0.02);
     } else if (p.kind === 'sign') {
       for (const x of [-0.5, 0.5]) {
         const post = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.06, 1.6, 8), wood);
@@ -517,7 +569,9 @@ export class Engine {
     for (const h of hits) {
       let o: THREE.Object3D | null = h.object;
       if (o.userData.panelAction || o.userData.backpackAction) return { kind: 'panel', object: o, point: h.point };
-      if (o.userData.infoPoint) return { kind: 'info', info: o.userData.infoPoint, point: h.point };
+      for (let q: THREE.Object3D | null = o; q; q = q.parent) {
+        if (q.userData.infoPoint) return { kind: 'info', info: q.userData.infoPoint, point: h.point };
+      }
       if (o.userData.portal) return { kind: 'portal', target: o.userData.portal, point: h.point };
       while (o) {
         if (o.userData.artifact) return { kind: 'artifact', artifact: o.userData.artifact, point: h.point };
@@ -777,7 +831,7 @@ export class Engine {
     for (const p of this.portalNodes) p.swirl.rotation.z = -t * 1.2;
     this.flames.forEach((f, i) => f.scale.set(1, 1 + Math.sin(t * 9 + i * 2) * 0.12, 1));
     this.dynamicGroup.traverse((o) => {
-      if (o.userData.billboard) {
+      if (o.userData.billboard && !o.userData.noBillboard) {
         const wp = new THREE.Vector3();
         o.getWorldPosition(wp);
         o.lookAt(head.x, wp.y, head.z);
