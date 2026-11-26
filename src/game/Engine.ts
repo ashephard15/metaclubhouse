@@ -380,7 +380,43 @@ export class Engine {
     node.lookAt(SPAWN.x, 0, SPAWN.z);
     const wood = std(0x6b4423, { roughness: 0.95 });
     let face: THREE.Mesh;
-    if (p.kind === 'sign') {
+    if (p.kind === 'jar') {
+      // Small round table with a glass jar of mission scrolls
+      const table = new THREE.Mesh(new THREE.CylinderGeometry(0.42, 0.42, 0.06, 32), wood);
+      table.position.y = 0.72;
+      const leg = new THREE.Mesh(new THREE.CylinderGeometry(0.08, 0.14, 0.7, 12), wood);
+      leg.position.y = 0.35;
+      node.add(table, leg);
+      const glass = new THREE.Mesh(
+        new THREE.CylinderGeometry(0.11, 0.12, 0.24, 24, 1, true),
+        new THREE.MeshStandardMaterial({ color: 0xd9c8ff, transparent: true, opacity: 0.3, roughness: 0.05, side: THREE.DoubleSide, depthWrite: false }),
+      );
+      glass.position.y = 0.87;
+      const neck = new THREE.Mesh(new THREE.CylinderGeometry(0.07, 0.1, 0.05, 20, 1, true), glass.material);
+      neck.position.y = 1.01;
+      const cork = new THREE.Mesh(new THREE.CylinderGeometry(0.065, 0.06, 0.05, 16), std(0xb98a52, { roughness: 1 }));
+      cork.position.y = 1.055;
+      node.add(glass, neck, cork);
+      for (let i = 0; i < 6; i++) {
+        const scroll = new THREE.Mesh(new THREE.CylinderGeometry(0.016, 0.016, 0.18, 10), std(0xf2e6cf));
+        const a = (i / 6) * Math.PI * 2;
+        scroll.position.set(Math.cos(a) * 0.05, 0.86, Math.sin(a) * 0.05);
+        scroll.rotation.set(Math.sin(a) * 0.25, 0, Math.cos(a) * 0.25);
+        const tie = new THREE.Mesh(new THREE.TorusGeometry(0.017, 0.004, 6, 12), std(0xb83a2e));
+        tie.rotation.x = Math.PI / 2;
+        scroll.add(tie);
+        node.add(scroll);
+      }
+      const glow = new THREE.PointLight(0xc9a0ff, 1.2, 1.5);
+      glow.position.y = 0.9;
+      node.add(glow);
+      const tag = makeLabel('Mission Jar', 0.6);
+      tag.mesh.position.set(0, 1.3, 0);
+      tag.mesh.userData.billboard = true;
+      this.labels.push(tag);
+      node.add(tag.mesh);
+      face = glass;
+    } else if (p.kind === 'sign') {
       for (const x of [-0.5, 0.5]) {
         const post = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.06, 1.6, 8), wood);
         post.position.set(x, 0.8, 0);
@@ -521,7 +557,7 @@ export class Engine {
     } else if (hit.kind === 'info') {
       const { pos, dir } = this.headPose();
       this.panel.openInfo(hit.info);
-      this.panel.placeInFront(pos, dir, true);
+      this.panel.placeInFront(pos, dir, !!hit.info.image);
       this.sfx.click();
       this.pulse(src, 0.4, 60);
       this.setState({ inspecting: hit.info.id });

@@ -212,7 +212,7 @@ export class InfoPanel {
       this.frame(ctx, w, h);
       ctx.fillStyle = '#f7c95c';
       ctx.font = 'bold 30px system-ui, sans-serif';
-      ctx.fillText(`${ZONES[p.zone].name.toUpperCase()} · ${p.kind === 'sign' ? 'SIGN' : 'FIELD GUIDE'}`, 56, 72);
+      ctx.fillText(`${ZONES[p.zone].name.toUpperCase()} · ${p.kind === 'sign' ? 'SIGN' : p.kind === 'jar' ? 'MISSIONS' : 'FIELD GUIDE'}`, 56, 72);
       ctx.fillStyle = '#fff8e1';
       ctx.font = 'bold 56px system-ui, sans-serif';
       wrapText(ctx, p.title, w - 220).slice(0, 2).forEach((l, i) => ctx.fillText(l, 56, 140 + i * 64));

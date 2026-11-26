@@ -56,7 +56,7 @@ export const ZONES: Record<ZoneId, Zone> = {
     fog: 0xa8d4ec,
     reference: 'references/treehouse_hub_reference.png',
     panorama: 'panoramas/treehouse_hub_360.png',
-    panoramaYaw: 0,
+    panoramaYaw: 180, // keeps the oversized painted jar behind the player at spawn
   },
   egypt: {
     id: 'egypt',
@@ -186,10 +186,10 @@ export const ARTIFACTS: Artifact[] = [
 export interface InfoPoint {
   id: string;
   zone: ZoneId;
-  kind: 'sign' | 'poster';
+  kind: 'sign' | 'poster' | 'jar';
   title: string;
   body: string;
-  image: string;
+  image?: string;
   position: [number, number, number];
 }
 
@@ -210,6 +210,12 @@ export const INFO_POINTS: InfoPoint[] = [
     image: 'references/egypt_arrival_reference.png', position: [5.4, 0, 3.4],
   },
 ];
+
+INFO_POINTS.push({
+  id: 'mission-jar', zone: 'treehouse', kind: 'jar', title: 'Mission Jar',
+  body: 'Your missions, Time Explorer: 1) Collect the 4 explorer tools here in the Tree House. 2) Travel to Ancient Egypt and find 7 artifacts, including the Bastet statue, the hieroglyphic tablet and the Nile scroll map. 3) Visit the Nile Fossil Exhibit and find 4 fossils. Answer each question to fill your backpack!',
+  position: [0, 0, -0.4],
+});
 
 export const infoPointsInZone = (zone: ZoneId) => INFO_POINTS.filter((p) => p.zone === zone);
 
