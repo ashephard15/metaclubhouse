@@ -56,7 +56,7 @@ export const ZONES: Record<ZoneId, Zone> = {
     fog: 0xa8d4ec,
     reference: 'references/treehouse_hub_reference.png',
     panorama: 'panoramas/treehouse_hub_360.png',
-    panoramaYaw: 180, // keeps the oversized painted jar behind the player at spawn
+    panoramaYaw: 0, // painted portal faces the game's portals
   },
   egypt: {
     id: 'egypt',
