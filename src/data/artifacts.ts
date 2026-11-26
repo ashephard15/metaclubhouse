@@ -49,13 +49,13 @@ export interface Zone {
 export const ZONES: Record<ZoneId, Zone> = {
   treehouse: {
     id: 'treehouse',
-    name: 'Tree House Hub',
+    name: 'Clubhouse',
     subtitle: 'Base camp for every Time Explorer',
     sky: 0x87c5e8,
     ground: 0x4f7a3a,
     fog: 0xa8d4ec,
     reference: 'references/treehouse_hub_reference.png',
-    panorama: 'panoramas/treehouse_hub_360.png',
+    panorama: 'panoramas/treehouse_hub_360.jpg',
     panoramaYaw: 0, // painted portal faces the game's portals
   },
   egypt: {
@@ -66,14 +66,14 @@ export const ZONES: Record<ZoneId, Zone> = {
     ground: 0xd9b26f,
     fog: 0xf5d39a,
     reference: 'references/egypt_arrival_reference.png',
-    panorama: 'panoramas/egypt_marketplace_portal_360.png',
+    panorama: 'panoramas/egypt_marketplace_portal_360.jpg',
     panoramaYaw: 0,
   },
   nile: {
     id: 'nile',
     name: 'Nile Fossil Exhibit',
     subtitle: 'Ancient life along the river',
-    panorama: 'panoramas/nile_fossil_marketplace_360.png',
+    panorama: 'panoramas/nile_fossil_marketplace_360.jpg',
     panoramaYaw: 0,
     sky: 0x2c3e50,
     ground: 0x6b5a45,
@@ -200,7 +200,7 @@ export const INFO_POINTS: InfoPoint[] = [
     image: 'inspection/egypt_welcome_sign.png', position: [-2.0, 0, 0.4],
   },
   {
-    id: 'treehouse-guide', zone: 'treehouse', kind: 'poster', title: 'Tree House Hub Field Guide',
+    id: 'treehouse-guide', zone: 'treehouse', kind: 'poster', title: 'Clubhouse Field Guide',
     body: 'Base camp for every Time Explorer. Collect the four explorer tools here, then step through a time portal to Ancient Egypt or the Nile Fossil Exhibit. Everything you collect goes in your backpack.',
     image: 'references/treehouse_hub_reference.png', position: [-4.6, 0, -3.6],
   },
@@ -213,7 +213,7 @@ export const INFO_POINTS: InfoPoint[] = [
 
 INFO_POINTS.push({
   id: 'mission-jar', zone: 'treehouse', kind: 'jar', title: 'Mission Jar',
-  body: 'Your missions, Time Explorer: 1) Collect the 4 explorer tools here in the Tree House. 2) Travel to Ancient Egypt and find 7 artifacts, including the Bastet statue, the hieroglyphic tablet and the Nile scroll map. 3) Visit the Nile Fossil Exhibit and find 4 fossils. Answer each question to fill your backpack!',
+  body: 'Your missions, Time Explorer: 1) Collect the 4 explorer tools here in the Clubhouse. 2) Travel to Ancient Egypt and find 7 artifacts, including the Bastet statue, the hieroglyphic tablet and the Nile scroll map. 3) Visit the Nile Fossil Exhibit and find 4 fossils. Answer each question to fill your backpack!',
   position: [0, 0, -0.4],
 });
 

@@ -5,11 +5,11 @@ A Vite + React + TypeScript + Three.js WebXR game for **Meta Quest 3** (and desk
 ## Zones
 | Zone | Artifacts |
 |---|---|
-| **Tree House Hub**: a wooden deck high in the forest canopy | Explorer's Compass, Time Map, Oil Lantern, Field Journal |
+| **Clubhouse** (start): a magical tree-house library where every adventure begins | Explorer's Compass, Time Map, Oil Lantern, Field Journal |
 | **Ancient Egypt Arrival**: the Nile c. 1500 BCE, with pyramids, Sphinx, market stall, stone path and torch-lit portals | Golden Scarab, Ankh, Papyrus Scroll, Canopic Jar, plus three discoveries with inspection art: **Bastet Cat Statue**, **Hieroglyphic Tablet**, **Nile Scroll Map** |
 | **Nile Fossil Exhibit**: museum hall open to the river | Ammonite, Crocodile Skull, Trilobite, Basilosaurus Tooth |
 
-Glowing portals at the back of each zone link to the other two. Answering an artifact's quiz adds it to your **Backpack** (15 items). Progress is saved in the browser. A welcome sign in Egypt and field-guide easels in the Tree House and Egypt open info panels with their artwork.
+Glowing portals at the back of each zone link to the other two. Answering an artifact's quiz adds it to your **Backpack** (15 items). Progress is saved in the browser. A welcome sign in Egypt and field-guide easels in the Clubhouse and Egypt open info panels with their artwork.
 
 ## Controls
 **Quest 3:** point a controller and pull the trigger to inspect artifacts, answer quizzes, use portals, or teleport by pointing at the floor. Left stick = smooth walk, right stick = snap-turn, **B or Y = backpack**. Hand-tracking pinch also works.
@@ -42,7 +42,7 @@ Desktop-only development: `npm run dev` → http://localhost:5173.
 - **`public/assets/inspection/`**: inspection images shown beside the field note on a hinged frame, aspect ratio preserved: `egypt_bastet_statue.png`, `egypt_hieroglyphic_tablet.png`, `egypt_nile_discovery.png` (the three Egypt discoveries) and `egypt_welcome_sign.png` (welcome sign). Set an artifact's `inspectImage` in `src/data/artifacts.ts` to add more.
 - **`public/assets/references/`**: environment references used as flat framed pictures (not spherical panoramas): `treehouse_hub_reference.png`, `egypt_arrival_reference.png`.
 - **`public/assets/cutouts/`**: transparent PNGs for all 12 quiz artifacts (trimmed, max 1024 px). They replace the stand-in 3D models in the world and show as backpack thumbnails. The three set-piece Egypt discoveries keep their 3D models.
-- **`public/assets/panoramas/`**: equirectangular 360° backdrops, one per zone (`treehouse_hub_360.png`, `egypt_marketplace_portal_360.png`, `nile_fossil_marketplace_360.png`). Each wraps a 40 m sphere around the play area. The floor, stands, artifacts, portals and signs stay real 3D geometry inside it, and distant 3D scenery is turned off. Remove a zone's `panorama` field in `src/data/artifacts.ts` to switch back to the all-3D scenery, or change `panoramaYaw` to rotate the view. These are 1774×887; versions at 4096×2048 or larger will look much sharper in a headset.
+- **`public/assets/panoramas/`**: equirectangular 360° backdrops, one per zone (`treehouse_hub_360.jpg`, `egypt_marketplace_portal_360.jpg`, `nile_fossil_marketplace_360.jpg`). Each wraps a 40 m sphere around the play area. The floor, stands, artifacts, portals and signs stay real 3D geometry inside it, and distant 3D scenery is turned off. Remove a zone's `panorama` field in `src/data/artifacts.ts` to switch back to the all-3D scenery, or change `panoramaYaw` to rotate the view. They are 7096×3548, AI-upscaled 4× from 1774×887 originals. Panoramas should be 2:1 and between 4096×2048 and 8192×4096 for Quest 3.
 - **`meta-store-submission/`**: Meta Horizon Store covers, icon and concept screenshots. Replace the screenshots with real in-game captures before submitting, because Meta requires screenshots to show actual app content without extra overlays.
 
 ## Testing status
