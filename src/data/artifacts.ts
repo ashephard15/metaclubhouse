@@ -87,25 +87,25 @@ export const ARTIFACTS: Artifact[] = [
   // ---------- Tree House Hub ----------
   {
     id: 'explorer-compass', name: "Explorer's Compass", zone: 'treehouse', shape: 'compass',
-    cutout: 'explorer-compass.png', position: [-0.75, 1.0, -1.05], color: 0xc9a227, standHeight: 0,
+    cutout: 'explorer-compass.png', position: [0.17, 1.0, 1.49], color: 0xc9a227, standHeight: 0,
     fieldNote: 'A compass needle is a tiny magnet. It lines up with Earth\'s magnetic field and points toward magnetic north, helping explorers find their way.',
     quiz: { question: 'Why does a compass needle point north?', options: ['It is pulled by the Sun', 'It is a magnet lining up with Earth\'s magnetic field', 'Wind pushes it'], answerIndex: 1 },
   },
   {
     id: 'time-map', name: 'Time Map', zone: 'treehouse', shape: 'map',
-    cutout: 'time-map.png', position: [0.75, 1.0, -1.05], color: 0xe8d5a3, standHeight: 0,
+    cutout: 'time-map.png', position: [0.4, 1.0, 2.23], color: 0xe8d5a3, standHeight: 0,
     fieldNote: 'Maps use a scale, a legend and a compass rose. Our Time Map adds one more thing: when each place existed in history.',
     quiz: { question: 'What part of a map explains its symbols?', options: ['The legend', 'The border', 'The title'], answerIndex: 0 },
   },
   {
     id: 'oil-lantern', name: 'Oil Lantern', zone: 'treehouse', shape: 'lantern',
-    cutout: 'oil-lantern.png', position: [-0.38, 1.0, -0.55], color: 0xff9f43, standHeight: 0,
+    cutout: 'oil-lantern.png', position: [-0.16, 1.0, 1.7], color: 0xff9f43, standHeight: 0,
     fieldNote: 'Before electric lights, lanterns burned oil through a cloth wick. Glass sides kept the flame safe from wind.',
     quiz: { question: 'What did old lanterns burn to make light?', options: ['Batteries', 'Oil soaked into a wick', 'Ice'], answerIndex: 1 },
   },
   {
     id: 'field-journal', name: 'Field Journal', zone: 'treehouse', shape: 'journal',
-    cutout: 'field-journal.png', position: [0.38, 1.0, -0.55], color: 0x8e5a2b, standHeight: 0,
+    cutout: 'field-journal.png', position: [0.9, 1.0, 1.8], color: 0x8e5a2b, standHeight: 0,
     fieldNote: 'Scientists record observations in field journals: drawings, measurements, dates and questions. Good notes let others check your discoveries.',
     quiz: { question: 'Why do explorers keep field journals?', options: ['To record observations others can check', 'To press flowers only', 'To keep secrets from scientists'], answerIndex: 0 },
   },
@@ -151,7 +151,7 @@ export const ARTIFACTS: Artifact[] = [
   },
   {
     id: 'nile-discovery', name: 'Nile Scroll Map', zone: 'egypt', shape: 'mapTable',
-    cutout: 'nile-discovery.png', position: [0, 0, -3.4], color: 0xe2cc93, standHeight: 0, static: true, cutoutHeight: 1.15,
+    cutout: 'nile-discovery.png', position: [-1.6, 0, -4.0], color: 0xe2cc93, standHeight: 0, static: true, cutoutHeight: 1.15,
     inspectImage: 'inspection/egypt_nile_discovery.png',
     fieldNote: 'Every summer the Nile flooded its banks. When the water went down it left rich black mud that was perfect for farming. Egyptians called their land Kemet, the Black Land, after that soil.',
     quiz: { question: 'Why was the Nile\'s yearly flood so important?', options: ['It left rich soil for growing crops', 'It washed away the pyramids', 'It made the desert colder'], answerIndex: 0 },
@@ -202,11 +202,6 @@ export const INFO_POINTS: InfoPoint[] = [
     image: 'inspection/egypt_welcome_sign.png', position: [-2.0, 0, 0.4],
   },
   {
-    id: 'how-to-play', zone: 'treehouse', kind: 'board', title: 'How to Play',
-    body: '1. Walk and look around. 2. Find the glowing artifacts. 3. Select one and answer its question. 4. Every right answer goes in your backpack. 5. Step into a portal to travel to Ancient Egypt or the Nile Fossil Exhibit. Collect all 15 to become a Master Time Explorer!',
-    image: 'props/how-to-play-sign.png', position: [-3.6, 0, 2.6],
-  },
-  {
     id: 'egypt-guide', zone: 'egypt', kind: 'poster', title: 'Ancient Egypt Field Guide',
     body: 'Along the Nile you\'ll find markets, temples, the Sphinx and the pyramids. There are seven artifacts to discover here, including three special discoveries in the market and by the river.',
     image: 'references/egypt_arrival_reference.png', position: [5.4, 0, 3.4],
@@ -216,7 +211,7 @@ export const INFO_POINTS: InfoPoint[] = [
 INFO_POINTS.push({
   id: 'mission-jar', zone: 'treehouse', kind: 'jar', title: 'Mission Jar',
   body: 'Your missions, Time Explorer: 1) Collect the 4 explorer tools here in the Clubhouse. 2) Travel to Ancient Egypt and find 7 artifacts, including the Bastet statue, the hieroglyphic tablet and the Nile scroll map. 3) Visit the Nile Fossil Exhibit and find 4 fossils. Answer each question to fill your backpack!',
-  position: [0, 0, -1.2],
+  position: [0.38, 0, 1.83],
 });
 
 /** Decorative cut-out props (transparent PNGs in public/assets/props/). Heights in metres. */
@@ -232,24 +227,12 @@ export interface Prop {
 }
 
 export const PROPS: Prop[] = [
-  // Clubhouse: round table scene from the original concept art
-  { zone: 'treehouse', image: 'compass-rug', position: [0, 0.012, -1.2], height: 4.4, flat: true },
-  { zone: 'treehouse', image: 'tree-stump', position: [-1.5, 0, -0.4], height: 0.62 },
-  { zone: 'treehouse', image: 'tree-stump', position: [1.5, 0, -0.4], height: 0.62 },
-  { zone: 'treehouse', image: 'tree-stump', position: [0, 0, 0.5], height: 0.62 },
-  { zone: 'treehouse', image: 'tree-stump', position: [-1.35, 0, -2.3], height: 0.62 },
-  { zone: 'treehouse', image: 'tree-stump', position: [1.35, 0, -2.3], height: 0.62 },
-  { zone: 'treehouse', image: 'sealed-scroll', position: [0.0, 0.81, -0.35], height: 0.2 },
-  { zone: 'treehouse', image: 'time-key', position: [0.45, 0.81, -1.8], height: 0.22 },
-  // Room edges (the window seat, pillows and telescope are part of the painted room)
-  { zone: 'treehouse', image: 'potted-plant', position: [-5.0, 0, 3.4], height: 1.1 },
-  { zone: 'treehouse', image: 'potted-plant', position: [3.9, 0, -4.7], height: 1.1 },
-  { zone: 'treehouse', image: 'basket-1', position: [5.4, 0, -1.6], height: 0.55 },
-  { zone: 'treehouse', image: 'basket-2', position: [-4.6, 0, -3.9], height: 0.6 },
-  { zone: 'treehouse', image: 'cauldron', position: [-3.4, 0, -5.2], height: 0.85 },
-  { zone: 'treehouse', image: 'owl-statue', position: [2.4, 0, -5.8], height: 0.9 },
-  { zone: 'treehouse', image: 'hourglass-medallion', position: [5.07, 3.2, 3.33], height: 0.7, fixed: true },
-  { zone: 'treehouse', image: 'treehouse-name-sign', position: [-1.9, 2.75, -6.3], height: 1.5, fixed: true },
+  // Clubhouse: exactly the concept picture's centre (rug, round table, four stumps). Everything else is painted in the room.
+  { zone: 'treehouse', image: 'compass-rug', position: [0.38, 0.012, 1.83], height: 3.6, flat: true },
+  { zone: 'treehouse', image: 'tree-stump', position: [-0.58, 0, 2.55], height: 0.62 },
+  { zone: 'treehouse', image: 'tree-stump', position: [1.1, 0, 2.79], height: 0.62 },
+  { zone: 'treehouse', image: 'tree-stump', position: [-0.75, 0, 1.21], height: 0.62 },
+  { zone: 'treehouse', image: 'tree-stump', position: [1.63, 0, 1.55], height: 0.62 },
   // Nile
   { zone: 'nile', image: 'dig-basket', position: [-4.4, 0, 0.6], height: 0.65 },
   { zone: 'nile', image: 'potted-plant', position: [5.2, 0, 0.2], height: 1.1 },

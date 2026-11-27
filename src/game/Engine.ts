@@ -5,6 +5,10 @@ import { XRHandModelFactory } from 'three/examples/jsm/webxr/XRHandModelFactory.
 import { ARTIFACTS, ZONES, artifactsInZone, infoPointsInZone, propsInZone, type Artifact, type InfoPoint, type ZoneId } from '../data/artifacts';
 import { buildArtifactModel, pedestal, roundTable, std } from './models';
 import { buildZone, PORTALS, SPAWN, WALK_RADIUS } from './zones';
+
+const MISSION_ORDER: ZoneId[] = ['egypt', 'nile'];
+/** Direction of the painted portal in the Clubhouse panorama, degrees right of straight ahead at spawn. */
+const CLUB_PORTAL_DEG = 98;
 import { InfoPanel } from './InfoPanel';
 import { BackpackPanel } from './BackpackPanel';
 import { CanvasPlane, makeLabel, roundRect, wrapText } from './canvasText';
@@ -20,7 +24,7 @@ export interface GameState {
 
 type Hit =
   | { kind: 'artifact'; artifact: Artifact; point: THREE.Vector3 }
-  | { kind: 'portal'; target: ZoneId; point: THREE.Vector3 }
+  | { kind: 'portal'; target: ZoneId | 'mission'; point: THREE.Vector3 }
   | { kind: 'info'; info: InfoPoint; point: THREE.Vector3 }
   | { kind: 'panel'; object: THREE.Object3D; point: THREE.Vector3 }
   | { kind: 'floor'; point: THREE.Vector3 };
@@ -221,7 +225,8 @@ export class Engine {
     }
 
     for (const a of artifactsInZone(id)) this.spawnArtifact(a);
-    for (const p of PORTALS[id]) this.spawnPortal(p.target, p.position);
+    for (const p of PORTALS[id]) this.spawnPortal(p.target, p.position, id);
+    if (id === 'treehouse') this.spawnTimePortal();
     for (const p of infoPointsInZone(id)) this.spawnInfoPoint(p);
     this.flames = [];
     group.traverse((o) => { if (o.userData.flame) this.flames.push(o); });
@@ -248,7 +253,7 @@ export class Engine {
       geo.scale(-1, 1, 1);
       this.panoSphere = new THREE.Mesh(geo, new THREE.MeshBasicMaterial({ fog: false, toneMapped: false, depthWrite: false }));
       this.panoSphere.renderOrder = -1;
-      this.panoSphere.position.set(0, 1.6, 0);
+      this.panoSphere.position.set(SPAWN.x, 1.6, SPAWN.z);
       this.scene.add(this.panoSphere);
     }
     const sphere = this.panoSphere;
@@ -390,7 +395,40 @@ export class Engine {
     }
   }
 
-  private spawnPortal(target: ZoneId, pos: [number, number, number]) {
+  /** Invisible hit area over the painted Clubhouse portal; entering follows the current mission. */
+  private spawnTimePortal() {
+    const yaw = THREE.MathUtils.degToRad(CLUB_PORTAL_DEG);
+    const node = new THREE.Group();
+    node.position.set(SPAWN.x + Math.sin(yaw) * 6, 0, SPAWN.z - Math.cos(yaw) * 6);
+    node.lookAt(SPAWN.x, 0, SPAWN.z);
+    const hit = new THREE.Mesh(new THREE.PlaneGeometry(2.4, 3.2), new THREE.MeshBasicMaterial({ visible: false }));
+    hit.position.y = 1.5;
+    hit.userData.portal = 'mission';
+    const label = makeLabel('Time Portal', 1.4);
+    label.mesh.position.y = 3.35;
+    this.labels.push(label);
+    node.add(hit, label.mesh);
+    this.dynamicGroup.add(node);
+    this.portalNodes.push({ target: 'egypt', node, swirl: hit });
+  }
+
+  /** Mission order: Egypt, then the Nile. Returns the zone the Time Portal sends the explorer to. */
+  currentMission(): ZoneId {
+    for (const z of MISSION_ORDER) if (artifactsInZone(z).some((a) => !this.state.discovered.includes(a.id))) return z;
+    return MISSION_ORDER[0];
+  }
+
+  private missionText(): string {
+    const z = this.currentMission();
+    const left = artifactsInZone(z).filter((a) => !this.state.discovered.includes(a.id)).length;
+    const clubLeft = artifactsInZone('treehouse').filter((a) => !this.state.discovered.includes(a.id)).length;
+    const allDone = this.state.discovered.length === ARTIFACTS.length;
+    if (allDone) return 'Every mission is complete. You are a Master Time Explorer! Step into the Time Portal any time to visit Ancient Egypt again.';
+    return `Your mission: step into the Time Portal to travel to ${ZONES[z].name}. Find the ${left} glowing artifact${left === 1 ? '' : 's'} still waiting there and answer each question to fill your backpack. When you are done, walk through the stone archway to come back here to the Clubhouse.` +
+      (clubLeft ? ` Before you go, check the explorer tools on this table: ${clubLeft} still to collect!` : '');
+  }
+
+  private spawnPortal(target: ZoneId, pos: [number, number, number], zone: ZoneId) {
     const node = new THREE.Group();
     node.position.set(...pos);
     node.lookAt(SPAWN.x, 0, SPAWN.z);
@@ -403,7 +441,7 @@ export class Engine {
     swirlCanvas.width = swirlCanvas.height = 256;
     const c = swirlCanvas.getContext('2d')!;
     const grad = c.createRadialGradient(128, 128, 10, 128, 128, 128);
-    const tint = target === 'egypt' ? '#ffb347' : target === 'nile' ? '#4fc3f7' : '#7ee08a';
+    const tint = '#b06cff'; // Clubhouse purple: every arch leads home
     grad.addColorStop(0, '#ffffff');
     grad.addColorStop(0.35, tint);
     grad.addColorStop(1, '#1a0f3a');
@@ -426,13 +464,13 @@ export class Engine {
     const swirl = new THREE.Mesh(new THREE.CircleGeometry(0.95, 48), new THREE.MeshBasicMaterial({ map: tex, transparent: true, opacity: 0.9 }));
     swirl.position.y = 1.35;
     swirl.userData.portal = target;
-    const label = makeLabel(`→ ${ZONES[target].name}`, 1.6);
+    const label = makeLabel(`Back to the ${ZONES[target].name}`, 1.8);
     label.mesh.position.y = 2.7;
     // Destination-themed stone arch (transparent PNG); the swirl shows through its opening
     const arch = ({
       egypt: { img: 'props/egypt-portal-arch.png', cy: 0.475, w: 0.49 * 0.92, h: 0.53 },
       nile: { img: 'props/nile-portal-arch.png', cy: 0.455, w: 0.52 * 0.87, h: 0.59 },
-    } as Partial<Record<ZoneId, { img: string; cy: number; w: number; h: number }>>)[target];
+    } as Partial<Record<ZoneId, { img: string; cy: number; w: number; h: number }>>)[zone];
     if (arch) {
       const H = 2.7;
       frame.visible = false;
@@ -606,13 +644,13 @@ export class Engine {
       this.setState({ inspecting: hit.artifact.id });
     } else if (hit.kind === 'info') {
       const { pos, dir } = this.headPose();
-      this.panel.openInfo(hit.info);
+      this.panel.openInfo(hit.info.kind === 'jar' ? { ...hit.info, body: this.missionText() } : hit.info);
       this.panel.placeInFront(pos, dir, !!hit.info.image);
       this.sfx.click();
       this.pulse(src, 0.4, 60);
       this.setState({ inspecting: hit.info.id });
     } else if (hit.kind === 'portal') {
-      this.travelTo(hit.target);
+      this.travelTo(hit.target === 'mission' ? this.currentMission() : hit.target);
     } else if (hit.kind === 'floor' && this.renderer.xr.isPresenting && !this.panel.isOpen && !this.backpack.isOpen) {
       this.teleportTo(hit.point);
     }

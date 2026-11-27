@@ -21,6 +21,7 @@ export default function VRSceneCanvas({ onReady, onState }: Props) {
     }
     const unsub = engine.subscribe(onState);
     onReady(engine);
+    (window as unknown as { __game?: Engine }).__game = engine; // handy for testing in the browser console
     return () => {
       unsub();
       engine.dispose();

@@ -57,14 +57,12 @@ export default function App() {
                 {(Object.keys(ZONES) as ZoneId[]).map((z) => {
                   const n = artifactsInZone(z).filter((a) => state.discovered.includes(a.id)).length;
                   return (
-                    <button
+                    <span
                       key={z}
-                      onClick={() => engineRef.current?.travelTo(z)}
-                      className={`rounded-lg px-2 py-1 text-xs font-semibold transition ${z === state.zone ? 'bg-amber-600 text-white' : 'bg-stone-800 text-amber-100 hover:bg-stone-700'}`}
-                      title={`Travel to ${ZONES[z].name}`}
+                      className={`rounded-lg px-2 py-1 text-xs font-semibold ${z === state.zone ? 'bg-amber-600 text-white' : 'bg-stone-800 text-amber-100'}`}
                     >
                       {ZONES[z].name.split(' ').slice(0, 2).join(' ')} · {n}/{artifactsInZone(z).length}
-                    </button>
+                    </span>
                   );
                 })}
               </div>
