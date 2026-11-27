@@ -9,6 +9,7 @@ import { XRHandModelFactory } from 'three/examples/jsm/webxr/XRHandModelFactory.
 import { ARTIFACTS, ZONES, artifactsInZone, infoPointsInZone, propsInZone, type Artifact, type InfoPoint, type ZoneId } from '../data/artifacts';
 import { buildArtifactModel, pedestal, roundTable, std } from './models';
 import { buildZone, PORTALS, SPAWN, WALK_AREA } from './zones';
+import { layoutPositions } from './layout';
 
 const MISSION_ORDER: ZoneId[] = ['egypt', 'nile', 'river', 'pyramid', 'tomb'];
 /** Direction of the painted portal in the Clubhouse panorama, degrees right of straight ahead at spawn. */
@@ -221,20 +222,26 @@ export class Engine {
       this.labels.push(title);
       this.dynamicGroup.add(title.mesh);
     }
-    for (const p of propsInZone(id)) {
+    const lay = layoutPositions(id);
+    const place = <T extends { position: [number, number, number] }>(o: T, key?: string): T => {
+      const at = key ? lay.get(key) : undefined;
+      return at ? { ...o, position: [at[0], o.position[1], at[1]] } : o;
+    };
+    for (const p0 of propsInZone(id)) {
+      const p = place(p0, p0.id);
       const g = this.sprite(`props/${p.image}.png`, p.height, { flat: p.flat, billboard: !p.fixed && !p.flat, shadow: !p.fixed && !p.flat && p.position[1] === 0 });
       g.position.set(...p.position);
       if (p.fixed) g.lookAt(SPAWN.x, p.position[1], SPAWN.z);
       this.dynamicGroup.add(g);
     }
 
-    for (const a of artifactsInZone(id)) this.spawnArtifact(a);
+    for (const a of artifactsInZone(id)) this.spawnArtifact(place(a, a.id));
     for (const p of PORTALS[id]) this.spawnPortal(p.target, p.position, id);
     if (id === 'treehouse') this.spawnTimePortal();
     // Doorways painted in the panoramas: pyramid entrance straight ahead; tomb exit is the corridor behind you
     if (id === 'pyramid') this.spawnDoorway('tomb', 0, 9, 'Enter the Pyramid');
     if (id === 'tomb') this.spawnDoorway('pyramid', -164, 7, 'Back outside');
-    for (const p of infoPointsInZone(id)) this.spawnInfoPoint(p);
+    for (const p of infoPointsInZone(id)) this.spawnInfoPoint(place(p, p.id));
     this.flames = [];
     group.traverse((o) => { if (o.userData.flame) this.flames.push(o); });
 
@@ -595,7 +602,7 @@ export class Engine {
       back.position.set(0, 0.95, -0.35);
       back.rotation.x = -0.2;
       node.add(back);
-      face = new THREE.Mesh(new THREE.PlaneGeometry(1.2, 0.68), new THREE.MeshBasicMaterial({ color: 0x3a2a1a }));
+      face = new THREE.Mesh(new THREE.PlaneGeometry(1.5, 0.85), new THREE.MeshBasicMaterial({ color: 0x3a2a1a }));
       face.position.set(0, 1.35, 0.05);
       const frame = new THREE.Mesh(new THREE.BoxGeometry(1.28, 0.76, 0.04), std(0xd4af37, { metalness: 0.7, roughness: 0.35 }));
       frame.position.set(0, 1.35, 0.02);
@@ -603,10 +610,10 @@ export class Engine {
       this.textureLoader.load(`${BASE}assets/${p.image}`, (tex) => {
         tex.colorSpace = THREE.SRGBColorSpace;
         const img = tex.image as HTMLImageElement;
-        const w = 1.2, h = w / (img.width / img.height);
+        const w = 1.5, h = w / (img.width / img.height);
         face.geometry.dispose();
         face.geometry = new THREE.PlaneGeometry(w, h);
-        frame.scale.set(1, (h + 0.08) / 0.76, 1);
+        frame.scale.set((w + 0.08) / 1.28, (h + 0.08) / 0.76, 1);
         (face.material as THREE.MeshBasicMaterial).dispose();
         face.material = new THREE.MeshBasicMaterial({ map: tex, toneMapped: false });
       });
