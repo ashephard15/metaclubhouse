@@ -207,7 +207,7 @@ export class Engine {
     this.zoneGroup.add(group);
 
     // Zone title sign
-    if (id !== 'treehouse') {
+    if (!z.panorama) { // with a panorama the HUD shows the zone name; no floating title
       const title = makeLabel(z.name, 2.6);
       title.mesh.position.set(0, 3.5, -6.9);
       this.labels.push(title);
@@ -274,7 +274,7 @@ export class Engine {
   private blobTex: THREE.Texture | null = null;
 
   /** A transparent PNG standing on the floor (bottom-anchored), or lying flat. Keeps the image's aspect ratio. */
-  private sprite(path: string, height: number, opts: { flat?: boolean; billboard?: boolean; shadow?: boolean } = {}): THREE.Group {
+  private sprite(path: string, height: number, opts: { flat?: boolean; billboard?: boolean; shadow?: boolean; back?: number } = {}): THREE.Group {
     const g = new THREE.Group();
     if (opts.billboard) g.userData.billboard = true;
     if (opts.shadow) {
@@ -308,7 +308,7 @@ export class Engine {
         plane.rotation.x = -Math.PI / 2;
       } else {
         plane = new THREE.Mesh(new THREE.PlaneGeometry(height * aspect, height), mat);
-        plane.position.y = height / 2;
+        plane.position.set(0, height / 2, -(opts.back ?? 0));
       }
       plane.userData.infoPoint = g.userData.infoPoint;
       g.add(plane);
@@ -331,13 +331,15 @@ export class Engine {
         const img = tex.image as HTMLImageElement;
         if (!img?.width) return;
         tex.colorSpace = THREE.SRGBColorSpace;
-        const h = 0.45;
+        const h = a.cutoutHeight ?? 0.45;
         const w = (h * img.width) / img.height;
         const plane = new THREE.Mesh(
           new THREE.PlaneGeometry(w, h),
           new THREE.MeshBasicMaterial({ map: tex, transparent: true, alphaTest: 0.05, side: THREE.DoubleSide }),
         );
         plane.userData.billboard = true;
+        // Set pieces stand on their stand (or the ground) instead of floating
+        if (a.static) plane.position.y = (a.standHeight ?? 0.75) + h / 2 - a.position[1];
         node.remove(model);
         this.disposeTree(model);
         node.add(plane);
@@ -351,7 +353,11 @@ export class Engine {
     if (standH > 0) {
       const style = { treehouse: [0x8e5a2b, 0.7, false], egypt: [0xc2a26a, 0.6, false], nile: [0x9a7a52, 0.6, true] } as const;
       const [color, width, glass] = style[a.zone];
-      const stand = a.zone === 'treehouse' ? this.sprite('props/tree-stump.png', standH + 0.12, { billboard: true, shadow: true }) : pedestal(color, standH, width, glass && !a.static);
+      const stand =
+        a.zone === 'treehouse' ? this.sprite('props/tree-stump.png', standH + 0.12, { billboard: true, shadow: true })
+        : a.zone === 'egypt' ? this.sprite('props/egypt-pedestal.png', standH + 0.06, { billboard: true, shadow: true, back: 0.12 })
+        : a.zone === 'nile' ? this.sprite('props/nile-display-stand.png', standH * 2, { billboard: true, shadow: true, back: 0.18 })
+        : pedestal(color, standH, width, glass && !a.static);
       stand.position.set(a.position[0], 0, a.position[2]);
       this.dynamicGroup.add(stand);
     }
@@ -422,6 +428,19 @@ export class Engine {
     swirl.userData.portal = target;
     const label = makeLabel(`→ ${ZONES[target].name}`, 1.6);
     label.mesh.position.y = 2.7;
+    // Destination-themed stone arch (transparent PNG); the swirl shows through its opening
+    const arch = ({
+      egypt: { img: 'props/egypt-portal-arch.png', cy: 0.475, w: 0.49 * 0.92, h: 0.53 },
+      nile: { img: 'props/nile-portal-arch.png', cy: 0.455, w: 0.52 * 0.87, h: 0.59 },
+    } as Partial<Record<ZoneId, { img: string; cy: number; w: number; h: number }>>)[target];
+    if (arch) {
+      const H = 2.7;
+      frame.visible = false;
+      node.add(this.sprite(arch.img, H));
+      swirl.position.set(0, arch.cy * H, -0.03);
+      swirl.scale.set((arch.w * H * 1.1) / 1.9, (arch.h * H * 1.08) / 1.9, 1);
+      label.mesh.position.y = H + 0.2;
+    }
     this.labels.push(label);
     node.add(frame, swirl, label.mesh);
     this.dynamicGroup.add(node);
@@ -473,36 +492,9 @@ export class Engine {
       face = new THREE.Mesh(new THREE.PlaneGeometry(1.1, 1.45), new THREE.MeshBasicMaterial({ visible: false }));
       face.position.set(0, 1.28, 0.02);
     } else if (p.kind === 'sign') {
-      for (const x of [-0.5, 0.5]) {
-        const post = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.06, 1.6, 8), wood);
-        post.position.set(x, 0.8, 0);
-        node.add(post);
-      }
-      const parchment = new CanvasPlane(768, 560, 1.0);
-      parchment.draw((ctx, w, h) => {
-        ctx.fillStyle = '#e9cf98';
-        roundRect(ctx, 0, 0, w, h, 24);
-        ctx.fill();
-        ctx.strokeStyle = '#6b4423';
-        ctx.lineWidth = 14;
-        roundRect(ctx, 7, 7, w - 14, h - 14, 20);
-        ctx.stroke();
-        ctx.fillStyle = '#2b1a0c';
-        ctx.textAlign = 'center';
-        ctx.font = 'bold 64px Georgia, serif';
-        ctx.fillText('Welcome', w / 2, 110);
-        ctx.fillText('Time Explorer!', w / 2, 190);
-        ctx.font = '42px Georgia, serif';
-        wrapText(ctx, "You've traveled to Ancient Egypt (c. 1500 BCE).", w - 120).forEach((l, i) => ctx.fillText(l, w / 2, 290 + i * 54));
-        ctx.font = 'bold 80px Georgia, serif';
-        ctx.fillText('☥', w / 2, 480);
-      });
-      this.labels.push(parchment);
-      face = parchment.mesh;
-      face.position.set(0, 1.25, 0.06);
-      const back = new THREE.Mesh(new THREE.BoxGeometry(1.06, 0.78, 0.06), wood);
-      back.position.set(0, 1.25, 0.02);
-      node.add(back);
+      node.add(this.sprite('props/egypt-welcome-sign.png', 1.9, { shadow: true }));
+      face = new THREE.Mesh(new THREE.PlaneGeometry(1.4, 1.9), new THREE.MeshBasicMaterial({ visible: false }));
+      face.position.set(0, 0.95, 0.02);
     } else {
       // Easel with the reference picture
       for (const [x, rz] of [[-0.45, 0.08], [0.45, -0.08]]) {

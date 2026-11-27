@@ -25,6 +25,8 @@ export interface Artifact {
   inspectImage?: string;
   /** Pedestal/table height under the artifact (default 0.75). Use 0 for objects that stand on the ground. */
   standHeight?: number;
+  /** Height in metres of the cutout picture in the world (default 0.45). */
+  cutoutHeight?: number;
   /** Large set-piece discoveries stay still instead of spinning/bobbing. */
   static?: boolean;
   fieldNote: string;
@@ -135,21 +137,21 @@ export const ARTIFACTS: Artifact[] = [
   },
   {
     id: 'bastet-statue', name: 'Bastet Cat Statue', zone: 'egypt', shape: 'bastet',
-    cutout: 'bastet-statue.png', position: [-5.6, 0.95, -0.6], color: 0x1c1c22, static: true,
+    cutout: 'bastet-statue.png', position: [-5.6, 0.95, -0.6], color: 0x1c1c22, static: true, cutoutHeight: 0.75,
     inspectImage: 'inspection/egypt_bastet_statue.png',
     fieldNote: 'Bastet was an Egyptian goddess shown as a cat or a woman with a cat\'s head. She protected homes and families. Egyptians loved cats because they kept mice and snakes away from stored grain.',
     quiz: { question: 'Why did ancient Egyptians value cats so much?', options: ['They pulled carts', 'They protected grain from mice and snakes', 'They guarded the pyramids at night'], answerIndex: 1 },
   },
   {
     id: 'hieroglyphic-tablet', name: 'Hieroglyphic Tablet', zone: 'egypt', shape: 'stela',
-    cutout: 'hieroglyphic-tablet.png', position: [5.6, 0.95, -0.6], color: 0xd9b77a, standHeight: 0.4, static: true,
+    cutout: 'hieroglyphic-tablet.png', position: [5.6, 0.95, -0.6], color: 0xd9b77a, standHeight: 0.4, static: true, cutoutHeight: 0.9,
     inspectImage: 'inspection/egypt_hieroglyphic_tablet.png',
     fieldNote: 'A carved stone slab like this is called a stela. Egyptians used stelae to honor gods and people and to record events. Hieroglyphs can run left, right or down. You read toward the faces of the people and animals.',
     quiz: { question: 'How do you know which way to read hieroglyphs?', options: ['Always right to left', 'Read toward the faces of people and animals', 'Start from the bottom'], answerIndex: 1 },
   },
   {
     id: 'nile-discovery', name: 'Nile Scroll Map', zone: 'egypt', shape: 'mapTable',
-    cutout: 'nile-discovery.png', position: [0, 0, -3.4], color: 0xe2cc93, standHeight: 0, static: true,
+    cutout: 'nile-discovery.png', position: [0, 0, -3.4], color: 0xe2cc93, standHeight: 0, static: true, cutoutHeight: 1.15,
     inspectImage: 'inspection/egypt_nile_discovery.png',
     fieldNote: 'Every summer the Nile flooded its banks. When the water went down it left rich black mud that was perfect for farming. Egyptians called their land Kemet, the Black Land, after that soil.',
     quiz: { question: 'Why was the Nile\'s yearly flood so important?', options: ['It left rich soil for growing crops', 'It washed away the pyramids', 'It made the desert colder'], answerIndex: 0 },
@@ -248,6 +250,10 @@ export const PROPS: Prop[] = [
   { zone: 'treehouse', image: 'owl-statue', position: [2.4, 0, -5.8], height: 0.9 },
   { zone: 'treehouse', image: 'hourglass-medallion', position: [5.07, 3.2, 3.33], height: 0.7, fixed: true },
   { zone: 'treehouse', image: 'treehouse-name-sign', position: [-1.9, 2.75, -6.3], height: 1.5, fixed: true },
+  // Nile
+  { zone: 'nile', image: 'dig-basket', position: [-4.4, 0, 0.6], height: 0.65 },
+  { zone: 'nile', image: 'potted-plant', position: [5.2, 0, 0.2], height: 1.1 },
+  { zone: 'nile', image: 'potted-plant', position: [-5.2, 0, 0.2], height: 1.1 },
   // Egypt
   { zone: 'egypt', image: 'pharaoh-plaque', position: [-5.2, 0, -3.6], height: 1.4 },
 ];
