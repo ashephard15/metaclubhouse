@@ -366,7 +366,7 @@ export class Engine {
       const [color, width, glass] = style[a.zone];
       const stand =
         a.zone === 'treehouse' ? this.sprite('props/tree-stump.png', standH + 0.12, { billboard: true, shadow: true })
-        : a.zone === 'egypt' ? this.sprite('props/egypt-pedestal.png', standH + 0.06, { billboard: true, shadow: true, back: 0.12 })
+        : a.zone === 'egypt' || a.zone === 'pyramid' ? this.sprite('props/egypt-pedestal.png', standH + 0.06, { billboard: true, shadow: true, back: 0.12 })
         : a.zone === 'nile' ? this.sprite('props/nile-display-stand.png', standH * 2, { billboard: true, shadow: true, back: 0.18 })
         : pedestal(color, standH, width, glass && !a.static);
       stand.position.set(a.position[0], 0, a.position[2]);

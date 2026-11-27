@@ -92,7 +92,8 @@ export const ZONES: Record<ZoneId, Zone> = {
     sky: 0x9fd4f0,
     ground: 0x8e5a2b,
     fog: 0xcfe6f2,
-    // panorama: 'panoramas/nile_river_voyage_360.png',  // add when the boat panorama arrives
+    panorama: 'panoramas/nile_river_voyage_360.png',
+    panoramaYaw: 0,
   },
   pyramid: {
     id: 'pyramid',
@@ -101,7 +102,8 @@ export const ZONES: Record<ZoneId, Zone> = {
     sky: 0x8fc8ee,
     ground: 0xd9b26f,
     fog: 0xf2dcae,
-    // panorama: 'panoramas/great_pyramid_360.png',  // add when the pyramid panorama arrives
+    panorama: 'panoramas/great_pyramid_360.png',
+    panoramaYaw: 0,
   },
 };
 
@@ -208,62 +210,62 @@ export const ARTIFACTS: Artifact[] = [
   // ---------- Nile River Voyage ----------
   {
     id: 'steering-oar', name: 'Steering Oar', zone: 'river', shape: 'oar',
-    cutout: 'steering-oar.png', position: [0, 1.15, -3.4], color: 0x8e5a2b,
+    cutout: 'steering-oar.png', position: [0, 0.8, -3.0], color: 0x8e5a2b, standHeight: 0, cutoutHeight: 1.7, static: true,
     fieldNote: 'The Nile flows north to the sea, but the wind usually blows from the north. So boats raised their sails to travel south and lowered them to float north with the current. The hieroglyph for "travel south" even shows a boat with its sail up!',
     quiz: { question: 'How did boats travel SOUTH on the Nile?', options: ['They floated with the current', 'They raised their sails to catch the north wind', 'Animals pulled them from the bank'], answerIndex: 1 },
   },
   {
     id: 'nilometer', name: 'Nilometer', zone: 'river', shape: 'nilometer',
-    cutout: 'nilometer.png', position: [-2.2, 1.15, -1.6], color: 0xc9a25a,
+    cutout: 'nilometer.png', position: [-2.0, 0.7, -1.4], color: 0xc9a25a, standHeight: 0, cutoutHeight: 1.35, static: true,
     fieldNote: 'A nilometer was a set of marks or steps carved in stone to measure how high the Nile rose each year. Too little water meant hunger; too much meant floods. Officials used it to predict the harvest and decide how much tax farmers would pay.',
     quiz: { question: 'What was a nilometer used for?', options: ['Measuring how high the Nile rose', 'Catching fish', 'Telling the time at night'], answerIndex: 0 },
   },
   {
     id: 'shaduf', name: 'Shaduf', zone: 'river', shape: 'shaduf',
-    cutout: 'shaduf.png', position: [2.2, 1.15, -1.6], color: 0x7a4f2a,
+    cutout: 'shaduf.png', position: [2.1, 0.7, -1.4], color: 0x7a4f2a, standHeight: 0, cutoutHeight: 1.4, static: true,
     fieldNote: 'A shaduf is a long pole with a bucket on one end and a heavy weight on the other. Farmers dipped the bucket in the river and the weight helped swing the water up into canals that watered their fields, even after the flood was gone.',
     quiz: { question: 'What did farmers use a shaduf for?', options: ['Grinding wheat', 'Lifting water from the river to their fields', 'Steering boats'], answerIndex: 1 },
   },
   {
     id: 'papyrus-reeds', name: 'Papyrus Reeds', zone: 'river', shape: 'reeds',
-    cutout: 'papyrus-reeds.png', position: [-2.4, 1.15, 1.0], color: 0x6f8f3a,
+    cutout: 'papyrus-reeds.png', position: [-2.2, 0.5, 1.2], color: 0x6f8f3a, standHeight: 0, cutoutHeight: 1.0, static: true,
     fieldNote: 'Papyrus reeds grew thick along the Nile. Egyptians tied bundles of them together to make light boats, and also used papyrus for rope, sandals, baskets, mats and paper.',
     quiz: { question: 'Which of these could Egyptians make from papyrus reeds?', options: ['Iron tools', 'Glass windows', 'Small boats and rope'], answerIndex: 2 },
   },
   {
     id: 'fishing-net', name: 'Fishing Net', zone: 'river', shape: 'net',
-    cutout: 'fishing-net.png', position: [2.4, 1.15, 1.0], color: 0xd9c08a,
+    cutout: 'fishing-net.png', position: [2.2, 0.35, 1.2], color: 0xd9c08a, standHeight: 0, cutoutHeight: 0.7, static: true,
     fieldNote: 'Fish from the Nile were an everyday food, along with bread and vegetables. Fishermen used nets, hooks and spears from small boats. They had to watch out for hippos: hippos were among the most dangerous animals on the river!',
     quiz: { question: 'Which river animal was one of the most dangerous to Egyptian fishermen?', options: ['The hippopotamus', 'The frog', 'The duck'], answerIndex: 0 },
   },
   // ---------- Great Pyramid of Giza ----------
   {
     id: 'limestone-block', name: 'Limestone Block', zone: 'pyramid', shape: 'block',
-    cutout: 'limestone-block.png', position: [-2.4, 1.15, -1.8], color: 0xd8c39a,
+    cutout: 'limestone-block.png', position: [-2.6, 0.4, -1.8], color: 0xd8c39a, standHeight: 0, cutoutHeight: 0.85, static: true,
     fieldNote: 'The Great Pyramid is made of about 2.3 million stone blocks. On average each one weighs around 2.5 tonnes, as much as a big car, and some granite blocks inside weigh far more.',
     quiz: { question: 'About how many stone blocks make up the Great Pyramid?', options: ['About 2,300', 'About 2.3 million', 'About 23'], answerIndex: 1 },
   },
   {
     id: 'copper-chisel', name: 'Copper Chisel', zone: 'pyramid', shape: 'chisel',
-    cutout: 'copper-chisel.png', position: [2.4, 1.15, -1.8], color: 0xb87333,
+    cutout: 'copper-chisel.png', position: [2.6, 1.45, -1.8], color: 0xb87333, standHeight: 1.1, cutoutHeight: 0.6,
     fieldNote: 'Workers shaped stone with copper chisels, stone hammers and wooden sledges. Archaeologists found the village where pyramid builders lived and the tombs where they were buried. They were organised, paid workers fed with bread and beer, not slaves.',
     quiz: { question: 'Who built the Great Pyramid?', options: ['Organised teams of paid workers', 'Aliens', 'A single pharaoh by himself'], answerIndex: 0 },
   },
   {
     id: 'cubit-rod', name: 'Cubit Rod', zone: 'pyramid', shape: 'cubit',
-    cutout: 'cubit-rod.png', position: [-2.6, 1.15, 1.2], color: 0x8e5a2b,
+    cutout: 'cubit-rod.png', position: [-2.8, 1.4, 1.2], color: 0x8e5a2b, standHeight: 1.1, cutoutHeight: 0.4,
     fieldNote: 'Egyptian builders measured with a cubit rod, about the length from elbow to fingertip (roughly 52 cm). They were so precise that the pyramid\'s four sides face almost exactly north, south, east and west.',
     quiz: { question: 'Which directions do the Great Pyramid\'s sides face?', options: ['They point in random directions', 'Toward the Nile only', 'Almost exactly north, south, east and west'], answerIndex: 2 },
   },
   {
     id: 'casing-stone', name: 'White Casing Stone', zone: 'pyramid', shape: 'block',
-    cutout: 'casing-stone.png', position: [2.6, 1.15, 1.2], color: 0xf4efe2,
+    cutout: 'casing-stone.png', position: [2.8, 1.35, 1.2], color: 0xf4efe2, standHeight: 1.1,
     fieldNote: 'When it was new, the pyramid was covered in smooth, polished white limestone casing stones that gleamed in the sun. Most were taken away long ago to build other things, which is why it looks stepped and rough today.',
     quiz: { question: 'What did the Great Pyramid look like when it was new?', options: ['Painted bright red', 'Covered in smooth, shining white limestone', 'Covered in grass'], answerIndex: 1 },
   },
   {
     id: 'pyramidion', name: 'Pyramidion Capstone', zone: 'pyramid', shape: 'pyramidion',
-    cutout: 'pyramidion.png', position: [0, 1.15, -3.4], color: 0xd4af37,
+    cutout: 'pyramidion.png', position: [0, 1.35, -3.4], color: 0xd4af37, standHeight: 1.1,
     fieldNote: 'At about 146 metres (481 feet) tall, the Great Pyramid was the tallest building made by people for around 3,800 years. It is the oldest of the Seven Wonders of the Ancient World, and the only one still standing.',
     quiz: { question: 'Which of the Seven Wonders of the Ancient World is still standing?', options: ['The Great Pyramid of Giza', 'The Colossus of Rhodes', 'The Hanging Gardens of Babylon'], answerIndex: 0 },
   },
