@@ -1,4 +1,4 @@
-export type ZoneId = 'treehouse' | 'egypt' | 'nile' | 'river' | 'pyramid';
+export type ZoneId = 'treehouse' | 'egypt' | 'nile' | 'river' | 'pyramid' | 'tomb';
 
 export type ArtifactShape =
   | 'compass' | 'map' | 'lantern' | 'journal'
@@ -6,7 +6,7 @@ export type ArtifactShape =
   | 'ammonite' | 'crocodile' | 'trilobite' | 'tooth'
   | 'bastet' | 'stela' | 'mapTable'
   | 'oar' | 'nilometer' | 'shaduf' | 'reeds' | 'net'
-  | 'block' | 'chisel' | 'cubit' | 'pyramidion';
+  | 'block' | 'chisel' | 'cubit' | 'pyramidion' | 'chest';
 
 export interface QuizQuestion {
   question: string;
@@ -103,6 +103,16 @@ export const ZONES: Record<ZoneId, Zone> = {
     ground: 0xd9b26f,
     fog: 0xf2dcae,
     panorama: 'panoramas/great_pyramid_360.png',
+    panoramaYaw: 0,
+  },
+  tomb: {
+    id: 'tomb',
+    name: 'Pharaoh\'s Tomb',
+    subtitle: 'Deep inside the Great Pyramid',
+    sky: 0x3a2410,
+    ground: 0xc9a676,
+    fog: 0x3a2410,
+    panorama: 'panoramas/pharaoh_tomb_360.png',
     panoramaYaw: 0,
   },
 };
@@ -269,6 +279,37 @@ export const ARTIFACTS: Artifact[] = [
     fieldNote: 'At about 146 metres (481 feet) tall, the Great Pyramid was the tallest building made by people for around 3,800 years. It is the oldest of the Seven Wonders of the Ancient World, and the only one still standing.',
     quiz: { question: 'Which of the Seven Wonders of the Ancient World is still standing?', options: ['The Great Pyramid of Giza', 'The Colossus of Rhodes', 'The Hanging Gardens of Babylon'], answerIndex: 0 },
   },
+  // ---------- Pharaoh's Tomb (inside the Great Pyramid) ----------
+  {
+    id: 'sarcophagus', name: 'Golden Sarcophagus', zone: 'tomb', shape: 'chest',
+    cutout: 'sarcophagus.png', position: [0, 0.6, 1.6], color: 0xd4af37, standHeight: 0, cutoutHeight: 1.2, static: true,
+    fieldNote: 'A pharaoh\'s mummy was placed in nested coffins, often shaped like the king with arms crossed holding a crook and flail, the symbols of royal power. These went inside a huge stone box called a sarcophagus. Khufu\'s own sarcophagus is made of red granite and still sits inside the Great Pyramid.',
+    quiz: { question: 'What did the pharaoh hold on his coffin as symbols of power?', options: ['A sword and shield', 'A crook and flail', 'A bow and arrow'], answerIndex: 1 },
+  },
+  {
+    id: 'canopic-set', name: 'Four Canopic Jars', zone: 'tomb', shape: 'canopic',
+    cutout: 'canopic-jars.png', position: [-2.4, 0.4, 2.6], color: 0xd9b77a, standHeight: 0, cutoutHeight: 0.8, static: true,
+    fieldNote: 'Each canopic jar was protected by one of the four Sons of Horus: human-headed Imsety guarded the liver, baboon-headed Hapy the lungs, jackal-headed Duamutef the stomach, and falcon-headed Qebehsenuef the intestines.',
+    quiz: { question: 'Which Son of Horus had the head of a baboon?', options: ['Imsety', 'Hapy', 'Qebehsenuef'], answerIndex: 1 },
+  },
+  {
+    id: 'offering-table', name: 'Offering Table', zone: 'tomb', shape: 'mapTable',
+    cutout: 'offering-table.png', position: [2.4, 0.5, 2.6], color: 0xd9b77a, standHeight: 0, cutoutHeight: 1.0, static: true,
+    fieldNote: 'Egyptians believed the spirit, called the ka, still needed food in the afterlife. Families and priests left bread, fruit, beer and other offerings, and pictures of food carved on tomb walls were thought to keep feeding the spirit forever.',
+    quiz: { question: 'Why did Egyptians leave food in tombs?', options: ['To feed the spirit (ka) in the afterlife', 'For the workers\' lunch', 'To attract animals'], answerIndex: 0 },
+  },
+  {
+    id: 'treasure-chest', name: 'Treasure Chest', zone: 'tomb', shape: 'chest',
+    cutout: 'treasure-chest.png', position: [-2.6, 0.4, 4.6], color: 0xd4af37, standHeight: 0, cutoutHeight: 0.8, static: true,
+    fieldNote: 'Pharaohs were buried with everything they might need in the afterlife: furniture, clothes, jewellery, games and chariots. Sadly, almost every pyramid was robbed in ancient times, which is why later pharaohs were buried in hidden tombs in the Valley of the Kings.',
+    quiz: { question: 'Why did later pharaohs stop building pyramids for their tombs?', options: ['They ran out of stone', 'Pyramids were easy targets for tomb robbers', 'Pyramids were too small'], answerIndex: 1 },
+  },
+  {
+    id: 'pharaoh-statue', name: 'Pharaoh Statue', zone: 'tomb', shape: 'stela',
+    cutout: 'pharaoh-statue.png', position: [2.6, 1.1, 4.6], color: 0xc9a25a, standHeight: 0, cutoutHeight: 2.2, static: true,
+    fieldNote: 'Statues of the pharaoh were made as a home for his ka, his life force, in case anything happened to his mummy. The striped headcloth is called a nemes, and the rearing cobra on his forehead, the uraeus, showed he was king.',
+    quiz: { question: 'What is the striped royal headcloth called?', options: ['A nemes', 'A toga', 'A turban'], answerIndex: 0 },
+  },
 ];
 
 /** Non-quiz points of interest: signs and reference posters. Inspecting shows the image + text. */
@@ -323,6 +364,8 @@ export const PROPS: Prop[] = [
   { zone: 'treehouse', image: 'tree-stump', position: [-1.13, 0, 1.06], height: 0.7 },
   { zone: 'treehouse', image: 'tree-stump', position: [2.04, 0, 1.5], height: 0.7 },
   // Nile River Voyage props are added when their pictures arrive
+  // Tomb
+  { zone: 'tomb', image: 'pharaoh-statue-dark', position: [-2.7, 0, 0.4], height: 2.2 },
   // Nile
   { zone: 'nile', image: 'dig-basket', position: [-4.4, 0, 0.6], height: 0.65 },
   { zone: 'nile', image: 'potted-plant', position: [5.2, 0, 0.2], height: 1.1 },
@@ -341,7 +384,7 @@ INFO_POINTS.push({
 
 INFO_POINTS.push({
   id: 'pyramid-welcome', zone: 'pyramid', kind: 'sign', title: 'The Great Pyramid',
-  body: 'Welcome to the Great Pyramid of Giza, built as a tomb for Pharaoh Khufu around 2560 BCE. Here is something amazing: by 1500 BCE, when the rest of this adventure takes place, the pyramid was already about 1,000 years old! Even Ancient Egyptians thought of it as ancient. Find the five glowing objects to learn how it was built.',
+  body: 'Welcome to the Great Pyramid of Giza, built as a tomb for Pharaoh Khufu around 2560 BCE. Here is something amazing: by 1500 BCE, when the rest of this adventure takes place, the pyramid was already about 1,000 years old! Even Ancient Egyptians thought of it as ancient. Find the five glowing objects to learn how it was built, then step through the doorway at the foot of the pyramid to explore the pharaoh\'s tomb inside!',
   position: [-2.3, 0, 3.4],
 });
 

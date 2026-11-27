@@ -10,7 +10,7 @@ import { ARTIFACTS, ZONES, artifactsInZone, infoPointsInZone, propsInZone, type 
 import { buildArtifactModel, pedestal, roundTable, std } from './models';
 import { buildZone, PORTALS, SPAWN, WALK_AREA } from './zones';
 
-const MISSION_ORDER: ZoneId[] = ['egypt', 'nile', 'river', 'pyramid'];
+const MISSION_ORDER: ZoneId[] = ['egypt', 'nile', 'river', 'pyramid', 'tomb'];
 /** Direction of the painted portal in the Clubhouse panorama, degrees right of straight ahead at spawn. */
 const CLUB_PORTAL_DEG = 98;
 import { InfoPanel } from './InfoPanel';
@@ -231,6 +231,9 @@ export class Engine {
     for (const a of artifactsInZone(id)) this.spawnArtifact(a);
     for (const p of PORTALS[id]) this.spawnPortal(p.target, p.position, id);
     if (id === 'treehouse') this.spawnTimePortal();
+    // Doorways painted in the panoramas: pyramid entrance straight ahead; tomb exit is the corridor behind you
+    if (id === 'pyramid') this.spawnDoorway('tomb', 0, 9, 'Enter the Pyramid');
+    if (id === 'tomb') this.spawnDoorway('pyramid', -164, 7, 'Back outside');
     for (const p of infoPointsInZone(id)) this.spawnInfoPoint(p);
     this.flames = [];
     group.traverse((o) => { if (o.userData.flame) this.flames.push(o); });
@@ -365,7 +368,7 @@ export class Engine {
     // Stand under the artifact, styled per zone
     const standH = a.standHeight ?? (a.zone === 'nile' ? 0.8 : 0.75);
     if (standH > 0) {
-      const style = { treehouse: [0x8e5a2b, 0.7, false], egypt: [0xc2a26a, 0.6, false], nile: [0x9a7a52, 0.6, true], river: [0x7a4f2a, 0.55, false], pyramid: [0xd8c39a, 0.6, false] } as const;
+      const style = { treehouse: [0x8e5a2b, 0.7, false], egypt: [0xc2a26a, 0.6, false], nile: [0x9a7a52, 0.6, true], river: [0x7a4f2a, 0.55, false], pyramid: [0xd8c39a, 0.6, false], tomb: [0xc9a676, 0.6, false] } as const;
       const [color, width, glass] = style[a.zone];
       const stand =
         a.zone === 'treehouse' ? this.sprite('props/tree-stump.png', standH + 0.12, { billboard: true, shadow: true })
@@ -422,6 +425,23 @@ export class Engine {
     this.portalNodes.push({ target: 'egypt', node, swirl: hit });
   }
 
+  /** Invisible hit area over a doorway painted in the panorama. yawDeg: degrees right of straight ahead at spawn. */
+  private spawnDoorway(target: ZoneId, yawDeg: number, dist: number, text: string) {
+    const yaw = THREE.MathUtils.degToRad(yawDeg);
+    const node = new THREE.Group();
+    node.position.set(SPAWN.x + Math.sin(yaw) * dist, 0, SPAWN.z - Math.cos(yaw) * dist);
+    node.lookAt(SPAWN.x, 0, SPAWN.z);
+    const hit = new THREE.Mesh(new THREE.PlaneGeometry(2.6, 4), new THREE.MeshBasicMaterial({ visible: false }));
+    hit.position.y = 2;
+    hit.userData.portal = target;
+    const label = makeLabel(text, 1.6);
+    label.mesh.position.y = 3.2;
+    this.labels.push(label);
+    node.add(hit, label.mesh);
+    this.dynamicGroup.add(node);
+    this.portalNodes.push({ target, node, swirl: hit });
+  }
+
   /** Mission order: Egypt, then the Nile. Returns the zone the Time Portal sends the explorer to. */
   currentMission(): ZoneId {
     for (const z of MISSION_ORDER) if (artifactsInZone(z).some((a) => !this.state.discovered.includes(a.id))) return z;
@@ -434,7 +454,7 @@ export class Engine {
     const clubLeft = artifactsInZone('treehouse').filter((a) => !this.state.discovered.includes(a.id)).length;
     const allDone = this.state.discovered.length === ARTIFACTS.length;
     if (allDone) return 'Every mission is complete. You are a Master Time Explorer! Step into the Time Portal any time to visit Ancient Egypt again.';
-    return `Your mission: step into the Time Portal to travel to ${ZONES[z].name}. Find the ${left} glowing artifact${left === 1 ? '' : 's'} still waiting there and answer each question to fill your backpack. When you are done, head back through the portal to come home to the Clubhouse.` +
+    return `Your mission: step into the Time Portal to travel to ${ZONES[z === 'tomb' ? 'pyramid' : z].name}${z === 'tomb' ? ', then go through the doorway into the Pharaoh\'s Tomb' : ''}. Find the ${left} glowing artifact${left === 1 ? '' : 's'} still waiting there and answer each question to fill your backpack. When you are done, head back through the portal to come home to the Clubhouse.` +
       (clubLeft ? ` Before you go, check the explorer tools on this table: ${clubLeft} still to collect!` : '');
   }
 
@@ -680,7 +700,8 @@ export class Engine {
       this.pulse(src, 0.4, 60);
       this.setState({ inspecting: hit.info.id });
     } else if (hit.kind === 'portal') {
-      this.travelTo(hit.target === 'mission' ? this.currentMission() : hit.target);
+      const dest = hit.target === 'mission' ? this.currentMission() : hit.target;
+      this.travelTo(hit.target === 'mission' && dest === 'tomb' ? 'pyramid' : dest); // the tomb is reached through the pyramid
     } else if (hit.kind === 'floor' && this.renderer.xr.isPresenting && !this.panel.isOpen && !this.backpack.isOpen) {
       this.teleportTo(hit.point);
     }

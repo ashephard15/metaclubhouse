@@ -12,13 +12,14 @@ export const PORTALS: Record<ZoneId, PortalDef[]> = {
   // On the boat there is no arch: the portal you arrived through hangs behind you at the stern.
   river: [ { target: 'treehouse', position: [0, 0, 7.0] } ],
   pyramid: [ { target: 'treehouse', position: [0, 0, 7.2] } ],
+  tomb: [],
 };
 
 export const SPAWN = new THREE.Vector3(0, 0, 4.5);
 export const WALK_RADIUS = 7;
 /** Walkable area per zone as an ellipse (half-width x, half-length z). The boat deck is long and narrow. */
 export const WALK_AREA: Record<ZoneId, { rx: number; rz: number }> = {
-  treehouse: { rx: 7, rz: 7 }, egypt: { rx: 7, rz: 7 }, nile: { rx: 7, rz: 7 }, river: { rx: 3.4, rz: 6.2 }, pyramid: { rx: 7, rz: 7 },
+  treehouse: { rx: 7, rz: 7 }, egypt: { rx: 7, rz: 7 }, nile: { rx: 7, rz: 7 }, river: { rx: 3.4, rz: 6.2 }, pyramid: { rx: 7, rz: 7 }, tomb: { rx: 6, rz: 6 },
 };
 
 /**
@@ -225,6 +226,11 @@ export function buildZone(id: ZoneId, panorama = false): { group: THREE.Group; f
       }
     }
     const py = pyramid(16); py.position.set(-90, -0.4, -60); far.add(py);
+  } else if (id === 'tomb') {
+    floor = new THREE.Mesh(new THREE.CircleGeometry(9, 48), std(0xc9a676));
+    floor.rotation.x = -Math.PI / 2;
+    floor.receiveShadow = true;
+    g.add(floor);
   } else if (id === 'pyramid') {
     // Great Pyramid of Giza: sandy plateau with the pyramid towering ahead
     floor = new THREE.Mesh(new THREE.CircleGeometry(panorama ? 9 : 200, 48), std(0xd9b26f, { roughness: 1 }));
