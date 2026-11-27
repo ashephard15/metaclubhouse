@@ -9,10 +9,17 @@ export const PORTALS: Record<ZoneId, PortalDef[]> = {
   treehouse: [],
   egypt: [ { target: 'treehouse', position: [0, 0, -3.0] } ], // stands over the big painted portal in the wall
   nile: [ { target: 'treehouse', position: [0, 0, -5.6] } ],
+  // On the boat there is no arch: the portal you arrived through hangs behind you at the stern.
+  river: [ { target: 'treehouse', position: [0, 0, 7.0] } ],
+  pyramid: [ { target: 'treehouse', position: [0, 0, 7.2] } ],
 };
 
 export const SPAWN = new THREE.Vector3(0, 0, 4.5);
 export const WALK_RADIUS = 7;
+/** Walkable area per zone as an ellipse (half-width x, half-length z). The boat deck is long and narrow. */
+export const WALK_AREA: Record<ZoneId, { rx: number; rz: number }> = {
+  treehouse: { rx: 7, rz: 7 }, egypt: { rx: 7, rz: 7 }, nile: { rx: 7, rz: 7 }, river: { rx: 3.4, rz: 6.2 }, pyramid: { rx: 7, rz: 7 },
+};
 
 /**
  * Builds static scenery for a zone. Returns the group and the walkable floor mesh.
@@ -185,6 +192,49 @@ export function buildZone(id: ZoneId, panorama = false): { group: THREE.Group; f
     const sun = new THREE.Mesh(new THREE.SphereGeometry(6, 24, 16), new THREE.MeshBasicMaterial({ color: 0xfff1b8 }));
     sun.position.set(60, 55, -110);
     far.add(sun);
+  } else if (id === 'river') {
+    // Nile River Voyage: the deck of a long wooden river boat in mid-stream
+    floor = new THREE.Mesh(new THREE.CircleGeometry(1, 64), std(0x9c6b3c, { roughness: 0.85 }));
+    floor.scale.set(3.9, 7.4, 1);
+    floor.rotation.x = -Math.PI / 2;
+    floor.receiveShadow = true;
+    g.add(floor);
+    for (let i = -7; i <= 7; i++) {
+      const plank = new THREE.Mesh(new THREE.BoxGeometry(0.02, 0.008, 14), std(0x6e4826));
+      plank.position.set(i * 0.27, 0.005, 0);
+      far.add(plank);
+    }
+    const rail = new THREE.Mesh(new THREE.TorusGeometry(1, 0.05, 8, 64), std(0x6e4826));
+    rail.scale.set(3.95, 7.45, 1);
+    rail.rotation.x = Math.PI / 2;
+    rail.position.y = 0.7;
+    far.add(rail);
+    const water = new THREE.Mesh(new THREE.PlaneGeometry(400, 400), std(0x2e7fb0, { roughness: 0.15, metalness: 0.3 }));
+    water.rotation.x = -Math.PI / 2;
+    water.position.y = -0.6;
+    far.add(water);
+    for (const side of [-1, 1]) {
+      const bank = new THREE.Mesh(new THREE.PlaneGeometry(60, 400), std(0x5f8f3a));
+      bank.rotation.x = -Math.PI / 2;
+      bank.position.set(side * 70, -0.4, 0);
+      far.add(bank);
+      for (let i = 0; i < 25; i++) {
+        const p = palm(4 + Math.random() * 3);
+        p.position.set(side * (42 + Math.random() * 10), -0.4, -120 + i * 10 + Math.random() * 5);
+        far.add(p);
+      }
+    }
+    const py = pyramid(16); py.position.set(-90, -0.4, -60); far.add(py);
+  } else if (id === 'pyramid') {
+    // Great Pyramid of Giza: sandy plateau with the pyramid towering ahead
+    floor = new THREE.Mesh(new THREE.CircleGeometry(panorama ? 9 : 200, 48), std(0xd9b26f, { roughness: 1 }));
+    floor.rotation.x = -Math.PI / 2;
+    floor.receiveShadow = true;
+    g.add(floor);
+    const great = pyramid(110, 0xe6d3a8); great.position.set(0, 0, -95); far.add(great);
+    const khafre = pyramid(95); khafre.position.set(-110, 0, -150); far.add(khafre);
+    const menkaure = pyramid(45); menkaure.position.set(-180, 0, -190); far.add(menkaure);
+    for (let i = 0; i < 3; i++) { const q = pyramid(10); q.position.set(60 + i * 22, 0, -60); far.add(q); }
   } else {
     // Nile Fossil Exhibit: museum hall opening onto the river
     floor = new THREE.Mesh(panorama ? new THREE.CircleGeometry(9, 48) : new THREE.PlaneGeometry(18, 18), std(panorama ? 0xc9a676 : 0x6b5a45, { roughness: 0.7 }));

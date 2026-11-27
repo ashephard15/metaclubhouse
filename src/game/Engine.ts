@@ -4,9 +4,9 @@ import { XRControllerModelFactory } from 'three/examples/jsm/webxr/XRControllerM
 import { XRHandModelFactory } from 'three/examples/jsm/webxr/XRHandModelFactory.js';
 import { ARTIFACTS, ZONES, artifactsInZone, infoPointsInZone, propsInZone, type Artifact, type InfoPoint, type ZoneId } from '../data/artifacts';
 import { buildArtifactModel, pedestal, roundTable, std } from './models';
-import { buildZone, PORTALS, SPAWN, WALK_RADIUS } from './zones';
+import { buildZone, PORTALS, SPAWN, WALK_AREA } from './zones';
 
-const MISSION_ORDER: ZoneId[] = ['egypt', 'nile'];
+const MISSION_ORDER: ZoneId[] = ['egypt', 'nile', 'river', 'pyramid'];
 /** Direction of the painted portal in the Clubhouse panorama, degrees right of straight ahead at spawn. */
 const CLUB_PORTAL_DEG = 98;
 import { InfoPanel } from './InfoPanel';
@@ -362,7 +362,7 @@ export class Engine {
     // Stand under the artifact, styled per zone
     const standH = a.standHeight ?? (a.zone === 'nile' ? 0.8 : 0.75);
     if (standH > 0) {
-      const style = { treehouse: [0x8e5a2b, 0.7, false], egypt: [0xc2a26a, 0.6, false], nile: [0x9a7a52, 0.6, true] } as const;
+      const style = { treehouse: [0x8e5a2b, 0.7, false], egypt: [0xc2a26a, 0.6, false], nile: [0x9a7a52, 0.6, true], river: [0x7a4f2a, 0.55, false], pyramid: [0xd8c39a, 0.6, false] } as const;
       const [color, width, glass] = style[a.zone];
       const stand =
         a.zone === 'treehouse' ? this.sprite('props/tree-stump.png', standH + 0.12, { billboard: true, shadow: true })
@@ -431,7 +431,7 @@ export class Engine {
     const clubLeft = artifactsInZone('treehouse').filter((a) => !this.state.discovered.includes(a.id)).length;
     const allDone = this.state.discovered.length === ARTIFACTS.length;
     if (allDone) return 'Every mission is complete. You are a Master Time Explorer! Step into the Time Portal any time to visit Ancient Egypt again.';
-    return `Your mission: step into the Time Portal to travel to ${ZONES[z].name}. Find the ${left} glowing artifact${left === 1 ? '' : 's'} still waiting there and answer each question to fill your backpack. When you are done, walk through the stone archway to come back here to the Clubhouse.` +
+    return `Your mission: step into the Time Portal to travel to ${ZONES[z].name}. Find the ${left} glowing artifact${left === 1 ? '' : 's'} still waiting there and answer each question to fill your backpack. When you are done, head back through the portal to come home to the Clubhouse.` +
       (clubLeft ? ` Before you go, check the explorer tools on this table: ${clubLeft} still to collect!` : '');
   }
 
@@ -536,8 +536,28 @@ export class Engine {
       node.add(board);
       face = new THREE.Mesh(new THREE.PlaneGeometry(1.1, 1.45), new THREE.MeshBasicMaterial({ visible: false }));
       face.position.set(0, 1.28, 0.02);
+    } else if (p.kind === 'sign' && !p.signImage) {
+      // Parchment sign on two posts, drawn until a sign picture is supplied
+      for (const x of [-0.5, 0.5]) {
+        const post = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.06, 1.6, 8), wood);
+        post.position.set(x, 0.8, 0);
+        node.add(post);
+      }
+      const parchment = new CanvasPlane(768, 560, 1.1);
+      parchment.draw((ctx, w, h) => {
+        ctx.fillStyle = '#e9cf98'; roundRect(ctx, 0, 0, w, h, 24); ctx.fill();
+        ctx.strokeStyle = '#6b4423'; ctx.lineWidth = 14; roundRect(ctx, 7, 7, w - 14, h - 14, 20); ctx.stroke();
+        ctx.fillStyle = '#2b1a0c'; ctx.textAlign = 'center';
+        ctx.font = 'bold 72px Georgia, serif'; ctx.fillText(p.title, w / 2, 130);
+        ctx.font = '40px Georgia, serif';
+        wrapText(ctx, p.zone === 'pyramid' ? 'Already 1,000 years old in 1500 BCE! Select me to learn more.' : 'The Nile: about 6,650 km long. Select me to learn more!', w - 120).forEach((l, i) => ctx.fillText(l, w / 2, 250 + i * 54));
+        ctx.font = 'bold 80px Georgia, serif'; ctx.fillText(p.zone === 'pyramid' ? '△' : '⛵', w / 2, 480);
+      });
+      this.labels.push(parchment);
+      face = parchment.mesh;
+      face.position.set(0, 1.3, 0.04);
     } else if (p.kind === 'sign') {
-      node.add(this.sprite('props/egypt-welcome-sign.png', 1.9, { shadow: true }));
+      node.add(this.sprite(p.signImage!, 1.9, { shadow: true }));
       face = new THREE.Mesh(new THREE.PlaneGeometry(1.4, 1.9), new THREE.MeshBasicMaterial({ visible: false }));
       face.position.set(0, 0.95, 0.02);
     } else {
@@ -692,8 +712,9 @@ export class Engine {
   }
 
   private clampToBounds(v: THREE.Vector3) {
-    const len = Math.hypot(v.x, v.z);
-    if (len > WALK_RADIUS) { v.x *= WALK_RADIUS / len; v.z *= WALK_RADIUS / len; }
+    const { rx, rz } = WALK_AREA[this.state.zone];
+    const k = Math.hypot(v.x / rx, v.z / rz);
+    if (k > 1) { v.x /= k; v.z /= k; }
     return v;
   }
 

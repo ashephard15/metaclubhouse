@@ -1,10 +1,12 @@
-export type ZoneId = 'treehouse' | 'egypt' | 'nile';
+export type ZoneId = 'treehouse' | 'egypt' | 'nile' | 'river' | 'pyramid';
 
 export type ArtifactShape =
   | 'compass' | 'map' | 'lantern' | 'journal'
   | 'scarab' | 'ankh' | 'papyrus' | 'canopic'
   | 'ammonite' | 'crocodile' | 'trilobite' | 'tooth'
-  | 'bastet' | 'stela' | 'mapTable';
+  | 'bastet' | 'stela' | 'mapTable'
+  | 'oar' | 'nilometer' | 'shaduf' | 'reeds' | 'net'
+  | 'block' | 'chisel' | 'cubit' | 'pyramidion';
 
 export interface QuizQuestion {
   question: string;
@@ -82,6 +84,24 @@ export const ZONES: Record<ZoneId, Zone> = {
     sky: 0x2c3e50,
     ground: 0x6b5a45,
     fog: 0x34495e,
+  },
+  river: {
+    id: 'river',
+    name: 'Nile River Voyage',
+    subtitle: 'Sailing the Nile, about 1500 BCE',
+    sky: 0x9fd4f0,
+    ground: 0x8e5a2b,
+    fog: 0xcfe6f2,
+    // panorama: 'panoramas/nile_river_voyage_360.png',  // add when the boat panorama arrives
+  },
+  pyramid: {
+    id: 'pyramid',
+    name: 'Great Pyramid of Giza',
+    subtitle: 'Built for Pharaoh Khufu, about 2560 BCE',
+    sky: 0x8fc8ee,
+    ground: 0xd9b26f,
+    fog: 0xf2dcae,
+    // panorama: 'panoramas/great_pyramid_360.png',  // add when the pyramid panorama arrives
   },
 };
 
@@ -184,6 +204,69 @@ export const ARTIFACTS: Artifact[] = [
     fieldNote: 'Egypt\'s Wadi Al-Hitan ("Valley of the Whales") holds fossils of early whales like Basilosaurus that still had tiny back legs.',
     quiz: { question: 'What surprising feature did early whale Basilosaurus have?', options: ['Wings', 'Tiny back legs', 'A shell'], answerIndex: 1 },
   },
+
+  // ---------- Nile River Voyage ----------
+  {
+    id: 'steering-oar', name: 'Steering Oar', zone: 'river', shape: 'oar',
+    cutout: 'steering-oar.png', position: [0, 1.15, -3.4], color: 0x8e5a2b,
+    fieldNote: 'The Nile flows north to the sea, but the wind usually blows from the north. So boats raised their sails to travel south and lowered them to float north with the current. The hieroglyph for "travel south" even shows a boat with its sail up!',
+    quiz: { question: 'How did boats travel SOUTH on the Nile?', options: ['They floated with the current', 'They raised their sails to catch the north wind', 'Animals pulled them from the bank'], answerIndex: 1 },
+  },
+  {
+    id: 'nilometer', name: 'Nilometer', zone: 'river', shape: 'nilometer',
+    cutout: 'nilometer.png', position: [-2.2, 1.15, -1.6], color: 0xc9a25a,
+    fieldNote: 'A nilometer was a set of marks or steps carved in stone to measure how high the Nile rose each year. Too little water meant hunger; too much meant floods. Officials used it to predict the harvest and decide how much tax farmers would pay.',
+    quiz: { question: 'What was a nilometer used for?', options: ['Measuring how high the Nile rose', 'Catching fish', 'Telling the time at night'], answerIndex: 0 },
+  },
+  {
+    id: 'shaduf', name: 'Shaduf', zone: 'river', shape: 'shaduf',
+    cutout: 'shaduf.png', position: [2.2, 1.15, -1.6], color: 0x7a4f2a,
+    fieldNote: 'A shaduf is a long pole with a bucket on one end and a heavy weight on the other. Farmers dipped the bucket in the river and the weight helped swing the water up into canals that watered their fields, even after the flood was gone.',
+    quiz: { question: 'What did farmers use a shaduf for?', options: ['Grinding wheat', 'Lifting water from the river to their fields', 'Steering boats'], answerIndex: 1 },
+  },
+  {
+    id: 'papyrus-reeds', name: 'Papyrus Reeds', zone: 'river', shape: 'reeds',
+    cutout: 'papyrus-reeds.png', position: [-2.4, 1.15, 1.0], color: 0x6f8f3a,
+    fieldNote: 'Papyrus reeds grew thick along the Nile. Egyptians tied bundles of them together to make light boats, and also used papyrus for rope, sandals, baskets, mats and paper.',
+    quiz: { question: 'Which of these could Egyptians make from papyrus reeds?', options: ['Iron tools', 'Glass windows', 'Small boats and rope'], answerIndex: 2 },
+  },
+  {
+    id: 'fishing-net', name: 'Fishing Net', zone: 'river', shape: 'net',
+    cutout: 'fishing-net.png', position: [2.4, 1.15, 1.0], color: 0xd9c08a,
+    fieldNote: 'Fish from the Nile were an everyday food, along with bread and vegetables. Fishermen used nets, hooks and spears from small boats. They had to watch out for hippos: hippos were among the most dangerous animals on the river!',
+    quiz: { question: 'Which river animal was one of the most dangerous to Egyptian fishermen?', options: ['The hippopotamus', 'The frog', 'The duck'], answerIndex: 0 },
+  },
+  // ---------- Great Pyramid of Giza ----------
+  {
+    id: 'limestone-block', name: 'Limestone Block', zone: 'pyramid', shape: 'block',
+    cutout: 'limestone-block.png', position: [-2.4, 1.15, -1.8], color: 0xd8c39a,
+    fieldNote: 'The Great Pyramid is made of about 2.3 million stone blocks. On average each one weighs around 2.5 tonnes, as much as a big car, and some granite blocks inside weigh far more.',
+    quiz: { question: 'About how many stone blocks make up the Great Pyramid?', options: ['About 2,300', 'About 2.3 million', 'About 23'], answerIndex: 1 },
+  },
+  {
+    id: 'copper-chisel', name: 'Copper Chisel', zone: 'pyramid', shape: 'chisel',
+    cutout: 'copper-chisel.png', position: [2.4, 1.15, -1.8], color: 0xb87333,
+    fieldNote: 'Workers shaped stone with copper chisels, stone hammers and wooden sledges. Archaeologists found the village where pyramid builders lived and the tombs where they were buried. They were organised, paid workers fed with bread and beer, not slaves.',
+    quiz: { question: 'Who built the Great Pyramid?', options: ['Organised teams of paid workers', 'Aliens', 'A single pharaoh by himself'], answerIndex: 0 },
+  },
+  {
+    id: 'cubit-rod', name: 'Cubit Rod', zone: 'pyramid', shape: 'cubit',
+    cutout: 'cubit-rod.png', position: [-2.6, 1.15, 1.2], color: 0x8e5a2b,
+    fieldNote: 'Egyptian builders measured with a cubit rod, about the length from elbow to fingertip (roughly 52 cm). They were so precise that the pyramid\'s four sides face almost exactly north, south, east and west.',
+    quiz: { question: 'Which directions do the Great Pyramid\'s sides face?', options: ['They point in random directions', 'Toward the Nile only', 'Almost exactly north, south, east and west'], answerIndex: 2 },
+  },
+  {
+    id: 'casing-stone', name: 'White Casing Stone', zone: 'pyramid', shape: 'block',
+    cutout: 'casing-stone.png', position: [2.6, 1.15, 1.2], color: 0xf4efe2,
+    fieldNote: 'When it was new, the pyramid was covered in smooth, polished white limestone casing stones that gleamed in the sun. Most were taken away long ago to build other things, which is why it looks stepped and rough today.',
+    quiz: { question: 'What did the Great Pyramid look like when it was new?', options: ['Painted bright red', 'Covered in smooth, shining white limestone', 'Covered in grass'], answerIndex: 1 },
+  },
+  {
+    id: 'pyramidion', name: 'Pyramidion Capstone', zone: 'pyramid', shape: 'pyramidion',
+    cutout: 'pyramidion.png', position: [0, 1.15, -3.4], color: 0xd4af37,
+    fieldNote: 'At about 146 metres (481 feet) tall, the Great Pyramid was the tallest building made by people for around 3,800 years. It is the oldest of the Seven Wonders of the Ancient World, and the only one still standing.',
+    quiz: { question: 'Which of the Seven Wonders of the Ancient World is still standing?', options: ['The Great Pyramid of Giza', 'The Colossus of Rhodes', 'The Hanging Gardens of Babylon'], answerIndex: 0 },
+  },
 ];
 
 /** Non-quiz points of interest: signs and reference posters. Inspecting shows the image + text. */
@@ -194,6 +277,8 @@ export interface InfoPoint {
   title: string;
   body: string;
   image?: string;
+  /** Sign picture (transparent PNG under public/assets/). Without one a parchment sign is drawn. */
+  signImage?: string;
   position: [number, number, number];
 }
 
@@ -201,7 +286,7 @@ export const INFO_POINTS: InfoPoint[] = [
   {
     id: 'egypt-welcome', zone: 'egypt', kind: 'sign', title: 'Welcome, Time Explorer!',
     body: 'You\'ve traveled to Ancient Egypt, about 1500 BCE. Find the glowing artifacts, answer their questions and fill your backpack. Look for the Bastet statue, the hieroglyphic tablet and the scroll map by the Nile.',
-    image: 'inspection/egypt_welcome_sign.png', position: [-2.0, 0, 0.9],
+    image: 'inspection/egypt_welcome_sign.png', signImage: 'props/egypt-welcome-sign.png', position: [-2.0, 0, 0.9],
   },
   {
     id: 'egypt-guide', zone: 'egypt', kind: 'poster', title: 'Ancient Egypt Field Guide',
@@ -235,6 +320,7 @@ export const PROPS: Prop[] = [
   { zone: 'treehouse', image: 'tree-stump', position: [1.22, 0, 3.01], height: 0.7 },
   { zone: 'treehouse', image: 'tree-stump', position: [-1.13, 0, 1.06], height: 0.7 },
   { zone: 'treehouse', image: 'tree-stump', position: [2.04, 0, 1.5], height: 0.7 },
+  // Nile River Voyage props are added when their pictures arrive
   // Nile
   { zone: 'nile', image: 'dig-basket', position: [-4.4, 0, 0.6], height: 0.65 },
   { zone: 'nile', image: 'potted-plant', position: [5.2, 0, 0.2], height: 1.1 },
@@ -244,6 +330,18 @@ export const PROPS: Prop[] = [
 ];
 
 export const propsInZone = (zone: ZoneId) => PROPS.filter((p) => p.zone === zone);
+
+INFO_POINTS.push({
+  id: 'river-welcome', zone: 'river', kind: 'sign', title: 'Welcome Aboard!',
+  body: 'You are sailing on the Nile, one of the longest rivers in the world: about 6,650 km (4,130 miles). Almost everyone in Ancient Egypt lived close to its banks, because the land beyond was desert. Here is a twist: Upper Egypt is in the SOUTH and Lower Egypt is in the NORTH, because the Nile flows from south to north. Find the five glowing objects on deck to learn more!',
+  position: [-1.5, 0, 2.6],
+});
+
+INFO_POINTS.push({
+  id: 'pyramid-welcome', zone: 'pyramid', kind: 'sign', title: 'The Great Pyramid',
+  body: 'Welcome to the Great Pyramid of Giza, built as a tomb for Pharaoh Khufu around 2560 BCE. Here is something amazing: by 1500 BCE, when the rest of this adventure takes place, the pyramid was already about 1,000 years old! Even Ancient Egyptians thought of it as ancient. Find the five glowing objects to learn how it was built.',
+  position: [-1.5, 0, 2.6],
+});
 
 export const infoPointsInZone = (zone: ZoneId) => INFO_POINTS.filter((p) => p.zone === zone);
 

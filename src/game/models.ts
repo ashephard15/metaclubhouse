@@ -166,6 +166,68 @@ export function buildArtifactModel(shape: ArtifactShape, color: number): THREE.O
       for (let i = 0; i < 4; i++) add(new THREE.CylinderGeometry(0.005, 0.005, 0.18, 4), std(0xd9b77a), [-0.4 + (i - 1.5) * 0.012, 0.88, -0.2], [0.15 * (i - 1.5), 0, 0.1]);
       break;
     }
+    case 'oar': {
+      const wood = std(color, { roughness: 0.8 });
+      add(new THREE.CylinderGeometry(0.02, 0.025, 0.6, 10), wood, [0, 0.05, 0], [0, 0, 0.5]);
+      const blade = add(new THREE.BoxGeometry(0.14, 0.26, 0.015), std(0xc9a25a), [-0.16, -0.22, 0], [0, 0, 0.5]);
+      blade.scale.y = 1;
+      add(new THREE.SphereGeometry(0.03, 10, 8), std(0x2a5db0), [0.13, 0.3, 0]);
+      break;
+    }
+    case 'nilometer': {
+      const stone = std(color, { roughness: 1, flatShading: true });
+      add(new THREE.BoxGeometry(0.16, 0.5, 0.12), stone);
+      for (let i = 0; i < 6; i++) add(new THREE.BoxGeometry(i % 2 ? 0.08 : 0.12, 0.01, 0.01), std(0x5a3a1e), [0.02, -0.2 + i * 0.08, -0.065]);
+      add(new THREE.BoxGeometry(0.2, 0.09, 0.02), std(0x2e7fb0, { transparent: true, opacity: 0.6 }), [0, -0.2, -0.07]);
+      break;
+    }
+    case 'shaduf': {
+      const wood = std(color, { roughness: 0.9 });
+      add(new THREE.CylinderGeometry(0.015, 0.02, 0.4, 8), wood, [0, -0.08, 0]);
+      add(new THREE.CylinderGeometry(0.01, 0.01, 0.55, 8), wood, [0, 0.12, 0], [0, 0, 1.2]);
+      add(new THREE.CylinderGeometry(0.04, 0.035, 0.06, 12), std(0x6f8f3a), [-0.25, 0.0, 0]);
+      add(new THREE.SphereGeometry(0.05, 12, 10), std(0x8a7a6a, { flatShading: true }), [0.25, 0.22, 0]);
+      break;
+    }
+    case 'reeds': {
+      for (let i = 0; i < 9; i++) {
+        const a = (i / 9) * Math.PI * 2;
+        add(new THREE.CylinderGeometry(0.008, 0.012, 0.42, 5), std(color), [Math.cos(a) * 0.035, 0, Math.sin(a) * 0.035], [Math.sin(a) * 0.12, 0, Math.cos(a) * 0.12]);
+        const tuft = add(new THREE.ConeGeometry(0.035, 0.07, 6), std(0x8fae4a), [Math.cos(a) * 0.06, 0.24, Math.sin(a) * 0.06], [Math.PI, 0, 0]);
+        tuft.scale.set(1, 0.8, 1);
+      }
+      add(new THREE.TorusGeometry(0.05, 0.008, 6, 16), std(0xb98a52), [0, -0.05, 0], [Math.PI / 2, 0, 0]);
+      break;
+    }
+    case 'net': {
+      const mesh = add(new THREE.SphereGeometry(0.17, 12, 8, 0, Math.PI * 2, 0, Math.PI / 2), std(color, { wireframe: true }));
+      mesh.rotation.x = Math.PI;
+      for (let i = 0; i < 3; i++) {
+        const fish = add(new THREE.SphereGeometry(0.05, 12, 8), std(0x9fb4c2, { metalness: 0.5, roughness: 0.3 }), [(i - 1) * 0.07, -0.09, (i % 2) * 0.03]);
+        fish.scale.set(1.8, 0.6, 0.5);
+      }
+      break;
+    }
+    case 'block': {
+      const b = add(new THREE.BoxGeometry(0.34, 0.24, 0.26), std(color, { roughness: 1, flatShading: true }));
+      b.rotation.y = 0.3;
+      break;
+    }
+    case 'chisel': {
+      add(new THREE.BoxGeometry(0.035, 0.36, 0.035), std(color, { metalness: 0.7, roughness: 0.35 }), [0, 0, 0], [0, 0, 0.6]);
+      add(new THREE.SphereGeometry(0.08, 10, 8), std(0x8a8070, { flatShading: true, roughness: 1 }), [0.16, 0.08, 0]);
+      break;
+    }
+    case 'cubit': {
+      add(new THREE.BoxGeometry(0.5, 0.05, 0.05), std(color), [0, 0, 0], [0, 0, 0.35]);
+      for (let i = 0; i < 7; i++) add(new THREE.BoxGeometry(0.005, 0.055, 0.052), std(0xf1c40f), [-0.2 + i * 0.066, 0, 0], [0, 0, 0.35]);
+      break;
+    }
+    case 'pyramidion': {
+      const m = add(new THREE.ConeGeometry(0.2, 0.28, 4), std(color, { metalness: 0.85, roughness: 0.25, emissive: 0x3a2a00 }));
+      m.rotation.y = Math.PI / 4;
+      break;
+    }
   }
   if (shape === 'bastet' || shape === 'stela') g.rotation.y = Math.PI; // carved/face side toward +z
   return g;

@@ -8,8 +8,10 @@ A Vite + React + TypeScript + Three.js WebXR game for **Meta Quest 3** (and desk
 | **Clubhouse** (start): a magical tree-house library where every adventure begins | Explorer's Compass, Time Map, Oil Lantern, Field Journal |
 | **Ancient Egypt Arrival**: the Nile c. 1500 BCE, with pyramids, Sphinx, market stall, stone path and torch-lit portals | Golden Scarab, Ankh, Papyrus Scroll, Canopic Jar, plus three discoveries with inspection art: **Bastet Cat Statue**, **Hieroglyphic Tablet**, **Nile Scroll Map** |
 | **Nile Fossil Exhibit**: museum hall open to the river | Ammonite, Crocodile Skull, Trilobite, Basilosaurus Tooth |
+| **Nile River Voyage**: on the deck of a boat in mid-river (return through the portal behind you) | Steering Oar, Nilometer, Shaduf, Papyrus Reeds, Fishing Net |
+| **Great Pyramid of Giza**: on the plateau in front of Khufu's pyramid (return through the portal behind you) | Limestone Block, Copper Chisel, Cubit Rod, White Casing Stone, Pyramidion |
 
-The Clubhouse has one Time Portal (the painted stone archway). It sends the explorer to their current mission: Ancient Egypt first, then the Nile Fossil Exhibit. Read the Mission Jar on the table to see it. Each destination has one stone arch back to the Clubhouse: the flowered ankh arch in Egypt, the fossil arch at the Nile. Answering an artifact's quiz adds it to your **Backpack** (15 items). Progress is saved in the browser. A welcome sign in Egypt and field-guide easels in the Clubhouse and Egypt open info panels with their artwork.
+The Clubhouse has one Time Portal (the painted stone archway). It sends the explorer to their current mission: Ancient Egypt, then the Nile Fossil Exhibit, the Nile River Voyage and the Great Pyramid. Read the Mission Jar on the table to see it. Each destination has one stone arch back to the Clubhouse: the flowered ankh arch in Egypt, the fossil arch at the Nile. Answering an artifact's quiz adds it to your **Backpack** (25 items). Progress is saved in the browser. A welcome sign in Egypt and field-guide easels in the Clubhouse and Egypt open info panels with their artwork.
 
 ## Controls
 **Quest 3:** point a controller and pull the trigger to inspect artifacts, answer quizzes, use portals, or teleport by pointing at the floor. Left stick = smooth walk, right stick = snap-turn, **B or Y = backpack**. Hand-tracking pinch also works.
