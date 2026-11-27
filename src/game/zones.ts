@@ -7,7 +7,7 @@ export interface PortalDef { target: ZoneId; position: [number, number, number] 
 export const PORTALS: Record<ZoneId, PortalDef[]> = {
   // The Clubhouse portal is the painted archway (see Engine.spawnTimePortal); it goes where the mission says.
   treehouse: [],
-  egypt: [ { target: 'treehouse', position: [0, 0, -3.0] } ], // stands over the big painted portal in the wall
+  egypt: [ { target: 'treehouse', position: [0, 0, -15.5] } ], // far back over the big painted portal in the wall
   nile: [ { target: 'treehouse', position: [0, 0, -5.6] } ],
   // On the boat there is no arch: the portal you arrived through hangs behind you at the stern.
   river: [ { target: 'treehouse', position: [0, 0, 7.0] } ],

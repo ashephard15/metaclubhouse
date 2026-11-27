@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import { VRButton } from 'three/examples/jsm/webxr/VRButton.js';
-import { GroundedSkybox } from 'three/examples/jsm/objects/GroundedSkybox.js';
+import { PanoramaBackdrop } from './panorama';
 
 /** Camera height the panoramas were painted from (metres). */
 const EYE_HEIGHT = 1.6;
@@ -71,7 +71,8 @@ export class Engine {
   private hemi: THREE.HemisphereLight;
   private sun: THREE.DirectionalLight;
   private textureLoader = new THREE.TextureLoader();
-  private panoSphere: THREE.Mesh | null = null;
+  private backdrop = new PanoramaBackdrop(EYE_HEIGHT, SPAWN);
+  private panoToken = 0;
   private panoTextures = new Map<string, THREE.Texture>();
 
   // desktop input
@@ -108,6 +109,7 @@ export class Engine {
     this.camera.rotation.order = 'YXZ';
     this.camera.position.set(0, 1.6, 0);
     this.rig.add(this.camera);
+    this.scene.add(this.backdrop.group);
     this.scene.add(this.rig, this.zoneGroup, this.dynamicGroup, this.panel.group, this.backpack.group);
 
     this.hemi = new THREE.HemisphereLight(0xffffff, 0x444422, 1.2);
@@ -239,8 +241,9 @@ export class Engine {
     for (const p of PORTALS[id]) this.spawnPortal(p.target, p.position, id);
     if (id === 'treehouse') this.spawnTimePortal();
     // Doorways painted in the panoramas: pyramid entrance straight ahead; tomb exit is the corridor behind you
-    if (id === 'pyramid') this.spawnDoorway('tomb', 0, 9, 'Enter the Pyramid');
-    if (id === 'tomb') this.spawnDoorway('pyramid', -164, 7, 'Back outside');
+    // A glowing portal in front of the pyramid's doorway leads into the tomb; the same portal waits behind you inside
+    if (id === 'pyramid') this.spawnPortal('tomb', [SPAWN.x, 0, SPAWN.z - 6.2], 'pyramid', "Enter the Pharaoh's Tomb");
+    if (id === 'tomb') this.spawnPortal('pyramid', [SPAWN.x, 0, SPAWN.z + 3.4], 'tomb', 'Back outside to the Pyramid');
     for (const p of infoPointsInZone(id)) this.spawnInfoPoint(place(p, p.id));
     this.flames = [];
     group.traverse((o) => { if (o.userData.flame) this.flames.push(o); });
@@ -261,31 +264,18 @@ export class Engine {
    * The 3D floor and all interactive objects sit inside it, so WebXR depth and movement are preserved.
    */
   private setPanorama(path: string | undefined, yawDeg: number) {
-    if (this.panoSphere) { this.panoSphere.visible = false; }
+    const token = ++this.panoToken; // ignore loads that finish after the player has moved on
+    this.backdrop.hide();
     if (!path) return;
-    const apply = (tex: THREE.Texture) => {
-      if (ZONES[this.state.zone].panorama !== path) return;
-      // Ground-projected backdrop: the painted floor is laid on the real floor plane,
-      // so objects placed in the world stand on it instead of floating in front of it.
-      if (this.panoSphere) { this.scene.remove(this.panoSphere); this.panoSphere.geometry.dispose(); (this.panoSphere.material as THREE.Material).dispose(); }
-      const sky = new GroundedSkybox(tex, EYE_HEIGHT, 60, 96);
-      (sky.material as THREE.MeshBasicMaterial).toneMapped = false;
-      (sky.material as THREE.MeshBasicMaterial).fog = false;
-      sky.renderOrder = -1;
-      sky.position.set(SPAWN.x, EYE_HEIGHT - 0.01, SPAWN.z);
-      sky.rotation.y = Math.PI / 2 + THREE.MathUtils.degToRad(yawDeg);
-      this.panoSphere = sky;
-      this.scene.add(sky);
-    };
     const cached = this.panoTextures.get(path);
-    if (cached) { apply(cached); return; }
+    if (cached) { this.backdrop.show(cached, yawDeg); return; }
     this.textureLoader.load(`${BASE}assets/${path}`, (tex) => {
       tex.colorSpace = THREE.SRGBColorSpace;
-      tex.anisotropy = 8;
       this.panoTextures.set(path, tex);
-      apply(tex);
+      if (token === this.panoToken) this.backdrop.show(tex, yawDeg);
     });
   }
+
 
 
   private blobTex: THREE.Texture | null = null;
@@ -419,13 +409,15 @@ export class Engine {
   private spawnTimePortal() {
     const yaw = THREE.MathUtils.degToRad(CLUB_PORTAL_DEG);
     const node = new THREE.Group();
-    node.position.set(SPAWN.x + Math.sin(yaw) * 6, 0, SPAWN.z - Math.cos(yaw) * 6);
+    // Placed far out and scaled up so it stays over the painted portal from anywhere in the room
+    const k = 16 / 6;
+    node.position.set(SPAWN.x + Math.sin(yaw) * 16, 0, SPAWN.z - Math.cos(yaw) * 16);
     node.lookAt(SPAWN.x, 0, SPAWN.z);
-    const hit = new THREE.Mesh(new THREE.PlaneGeometry(2.4, 3.2), new THREE.MeshBasicMaterial({ visible: false }));
-    hit.position.y = 1.5;
+    const hit = new THREE.Mesh(new THREE.PlaneGeometry(2.4 * k, 3.2 * k), new THREE.MeshBasicMaterial({ visible: false }));
+    hit.position.y = EYE_HEIGHT + (1.5 - EYE_HEIGHT) * k;
     hit.userData.portal = 'mission';
-    const label = makeLabel('Time Portal', 1.4);
-    label.mesh.position.y = 3.35;
+    const label = makeLabel('Time Portal', 1.4 * k);
+    label.mesh.position.y = EYE_HEIGHT + (3.35 - EYE_HEIGHT) * k;
     this.labels.push(label);
     node.add(hit, label.mesh);
     this.dynamicGroup.add(node);
@@ -465,7 +457,7 @@ export class Engine {
       (clubLeft ? ` Before you go, check the explorer tools on this table: ${clubLeft} still to collect!` : '');
   }
 
-  private spawnPortal(target: ZoneId, pos: [number, number, number], zone: ZoneId) {
+  private spawnPortal(target: ZoneId, pos: [number, number, number], zone: ZoneId, text?: string) {
     const node = new THREE.Group();
     node.position.set(...pos);
     node.lookAt(SPAWN.x, 0, SPAWN.z);
@@ -501,7 +493,7 @@ export class Engine {
     const swirl = new THREE.Mesh(new THREE.CircleGeometry(0.95, 48), new THREE.MeshBasicMaterial({ map: tex, transparent: true, opacity: 0.9 }));
     swirl.position.y = 1.35;
     swirl.userData.portal = target;
-    const label = makeLabel(`Back to the ${ZONES[target].name}`, 1.8);
+    const label = makeLabel(text ?? `Back to the ${ZONES[target].name}`, 1.8);
     label.mesh.position.y = 2.7;
     // Destination-themed stone arch (transparent PNG); the swirl shows through its opening
     const arch = ({
@@ -509,12 +501,14 @@ export class Engine {
       nile: { img: 'props/nile-portal-arch.png', cy: 0.455, w: 0.52 * 0.87, h: 0.59 },
     } as Partial<Record<ZoneId, { img: string; cy: number; w: number; h: number }>>)[zone];
     if (arch) {
-      const H = zone === 'egypt' ? 6.6 : 3.6; // Egypt: covers the painted wall portal
+      // Egypt's arch stands far back over the painted wall portal (scaled up to match), so it stays lined up as you walk
+      const H = zone === 'egypt' ? 17.6 : 3.6;
       frame.visible = false;
       node.add(this.sprite(arch.img, H));
       swirl.position.set(0, arch.cy * H, -0.03);
       swirl.scale.set((arch.w * H * 1.1) / 1.9, (arch.h * H * 1.08) / 1.9, 1);
       label.mesh.position.y = H + 0.2;
+      if (zone === 'egypt') { label.mesh.scale.setScalar(2.6); label.mesh.position.y = H + 0.8; }
     }
     this.labels.push(label);
     node.add(frame, swirl, label.mesh);
@@ -914,6 +908,7 @@ export class Engine {
 
     const head = new THREE.Vector3();
     this.camera.getWorldPosition(head);
+    this.backdrop.update(head);
 
     for (const n of this.artifactNodes) {
       n.node.position.y = n.baseY + Math.sin(t * 1.6 + n.baseY * 5) * 0.04;

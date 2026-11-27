@@ -220,31 +220,31 @@ export const ARTIFACTS: Artifact[] = [
   // ---------- Nile River Voyage ----------
   {
     id: 'steering-oar', name: 'Steering Oar', zone: 'river', shape: 'oar',
-    cutout: 'steering-oar.png', position: [0.0, 0.9, -1.55], color: 0x8e5a2b, standHeight: 0, cutoutHeight: 1.8, static: true,
+    cutout: 'steering-oar.png', position: [0.0, 1.3, -1.55], color: 0x8e5a2b, standHeight: 0, cutoutHeight: 2.6, static: true,
     fieldNote: 'The Nile flows north to the sea, but the wind usually blows from the north. So boats raised their sails to travel south and lowered them to float north with the current. The hieroglyph for "travel south" even shows a boat with its sail up!',
     quiz: { question: 'How did boats travel SOUTH on the Nile?', options: ['They floated with the current', 'They raised their sails to catch the north wind', 'Animals pulled them from the bank'], answerIndex: 1 },
   },
   {
     id: 'nilometer', name: 'Nilometer', zone: 'river', shape: 'nilometer',
-    cutout: 'nilometer.png', position: [-1.61, 0.7, -0.26], color: 0xc9a25a, standHeight: 0, cutoutHeight: 1.4, static: true,
+    cutout: 'nilometer.png', position: [-1.61, 1.0, -0.26], color: 0xc9a25a, standHeight: 0, cutoutHeight: 2.0, static: true,
     fieldNote: 'A nilometer was a set of marks or steps carved in stone to measure how high the Nile rose each year. Too little water meant hunger; too much meant floods. Officials used it to predict the harvest and decide how much tax farmers would pay.',
     quiz: { question: 'What was a nilometer used for?', options: ['Measuring how high the Nile rose', 'Catching fish', 'Telling the time at night'], answerIndex: 0 },
   },
   {
     id: 'shaduf', name: 'Shaduf', zone: 'river', shape: 'shaduf',
-    cutout: 'shaduf.png', position: [1.69, 0.7, -0.26], color: 0x7a4f2a, standHeight: 0, cutoutHeight: 1.4, static: true,
+    cutout: 'shaduf.png', position: [1.69, 1.0, -0.26], color: 0x7a4f2a, standHeight: 0, cutoutHeight: 2.0, static: true,
     fieldNote: 'A shaduf is a long pole with a bucket on one end and a heavy weight on the other. Farmers dipped the bucket in the river and the weight helped swing the water up into canals that watered their fields, even after the flood was gone.',
     quiz: { question: 'What did farmers use a shaduf for?', options: ['Grinding wheat', 'Lifting water from the river to their fields', 'Steering boats'], answerIndex: 1 },
   },
   {
     id: 'papyrus-reeds', name: 'Papyrus Reeds', zone: 'river', shape: 'reeds',
-    cutout: 'papyrus-reeds.png', position: [-1.77, 0.65, 1.83], color: 0x6f8f3a, standHeight: 0, cutoutHeight: 1.3, static: true,
+    cutout: 'papyrus-reeds.png', position: [-1.77, 0.85, 1.83], color: 0x6f8f3a, standHeight: 0, cutoutHeight: 1.7, static: true,
     fieldNote: 'Papyrus reeds grew thick along the Nile. Egyptians tied bundles of them together to make light boats, and also used papyrus for rope, sandals, baskets, mats and paper.',
     quiz: { question: 'Which of these could Egyptians make from papyrus reeds?', options: ['Iron tools', 'Glass windows', 'Small boats and rope'], answerIndex: 2 },
   },
   {
     id: 'fishing-net', name: 'Fishing Net', zone: 'river', shape: 'net',
-    cutout: 'fishing-net.png', position: [1.77, 0.5, 1.83], color: 0xd9c08a, standHeight: 0, cutoutHeight: 1.0, static: true,
+    cutout: 'fishing-net.png', position: [1.77, 0.7, 1.83], color: 0xd9c08a, standHeight: 0, cutoutHeight: 1.4, static: true,
     fieldNote: 'Fish from the Nile were an everyday food, along with bread and vegetables. Fishermen used nets, hooks and spears from small boats. They had to watch out for hippos: hippos were among the most dangerous animals on the river!',
     quiz: { question: 'Which river animal was one of the most dangerous to Egyptian fishermen?', options: ['The hippopotamus', 'The frog', 'The duck'], answerIndex: 0 },
   },
