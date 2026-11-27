@@ -49,3 +49,11 @@ Desktop-only development: `npm run dev` → http://localhost:5173.
 
 ## Testing status
 Tested in desktop Chrome: all six zones, portals, doorways, quizzes, backpack and saved progress. Live build: https://ashephard15.github.io/metaclubhouse/. The WebXR paths (controllers, hands, teleport, snap-turn, in-headset backpack) are being tested on Meta Quest 3.
+
+## Narration
+A teacher voice reads every artifact panel and its quiz, cheers correct answers and encourages another try. Clips live in `public/assets/voice/` and are generated with the open-source Kokoro voice model:
+```bash
+node scripts/voice/export.mjs            # collects every line from src/data/artifacts.ts
+python3 scripts/voice/generate.py kokoro-v1.0.onnx voices-v1.0.bin af_heart   # re-records only changed lines
+```
+Model files: https://github.com/thewh1teagle/kokoro-onnx/releases (model-files-v1.0). Players can turn the voice off with the Voice button.

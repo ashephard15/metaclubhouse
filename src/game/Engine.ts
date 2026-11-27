@@ -18,6 +18,7 @@ import { InfoPanel } from './InfoPanel';
 import { BackpackPanel } from './BackpackPanel';
 import { CanvasPlane, makeLabel, roundRect, wrapText } from './canvasText';
 import { Sfx } from './sfx';
+import { Narrator } from './narrator';
 
 export interface GameState {
   zone: ZoneId;
@@ -25,6 +26,7 @@ export interface GameState {
   inXR: boolean;
   inspecting: string | null;
   backpackOpen: boolean;
+  voiceOn: boolean;
 }
 
 type Hit =
@@ -68,6 +70,7 @@ export class Engine {
   private controllers: ControllerRig[] = [];
   private clock = new THREE.Clock();
   private sfx = new Sfx();
+  narrator = new Narrator();
   private hemi: THREE.HemisphereLight;
   private sun: THREE.DirectionalLight;
   private textureLoader = new THREE.TextureLoader();
@@ -91,7 +94,7 @@ export class Engine {
   private listeners = new Set<(s: GameState) => void>();
 
   constructor(private container: HTMLElement) {
-    this.state = { zone: 'treehouse', discovered: this.loadProgress(), inXR: false, inspecting: null, backpackOpen: false };
+    this.state = { zone: 'treehouse', discovered: this.loadProgress(), inXR: false, inspecting: null, backpackOpen: false, voiceOn: true };
 
     this.renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: 'high-performance' });
     this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
@@ -124,6 +127,7 @@ export class Engine {
       optionalFeatures: ['local-floor', 'bounded-floor', 'hand-tracking', 'layers'],
     });
 
+    this.state = { ...this.state, voiceOn: this.narrator.enabled };
     this.setupControllers();
     this.setupDesktopInput();
     this.loadZone('treehouse');
@@ -175,8 +179,14 @@ export class Engine {
     this.refreshRings();
   }
 
+  toggleVoice() {
+    this.narrator.setEnabled(!this.narrator.enabled);
+    this.setState({ voiceOn: this.narrator.enabled });
+  }
+
   // ---------------- zones ----------------
   travelTo(zone: ZoneId) {
+    this.narrator.stop();
     this.panel.hide();
     this.backpack.hide();
     this.loadZone(zone);
@@ -683,12 +693,14 @@ export class Engine {
       if (hit.object.userData.backpackAction === 'close') this.toggleBackpack();
     } else if (hit.kind === 'panel') {
       const r = this.panel.activate(hit.object);
-      if (r === 'correct') this.discover(this.panel.artifact!);
-      else if (r === 'wrong') { this.sfx.wrong(); this.pulse(src, 0.6, 120); }
-      else if (r === 'close') { this.sfx.click(); this.setState({ inspecting: null }); }
+      if (r === 'correct') { this.discover(this.panel.artifact!); this.narrator.correct(); }
+      else if (r === 'wrong') { this.sfx.wrong(); this.pulse(src, 0.6, 120); this.narrator.wrong(); }
+      else if (r === 'close') { this.sfx.click(); this.narrator.stop(); this.setState({ inspecting: null }); }
     } else if (hit.kind === 'artifact') {
       const { pos, dir } = this.headPose();
-      this.panel.open(hit.artifact, this.state.discovered.includes(hit.artifact.id));
+      const found = this.state.discovered.includes(hit.artifact.id);
+      this.panel.open(hit.artifact, found);
+      this.narrator.play(found ? 'already' : `artifact-${hit.artifact.id}`);
       this.panel.placeInFront(pos, dir, !!hit.artifact.inspectImage);
       this.sfx.click();
       this.pulse(src, 0.4, 60);
@@ -696,6 +708,8 @@ export class Engine {
     } else if (hit.kind === 'info') {
       const { pos, dir } = this.headPose();
       this.panel.openInfo(hit.info.kind === 'jar' ? { ...hit.info, body: this.missionText() } : hit.info);
+      const allDone = this.state.discovered.length === ARTIFACTS.length;
+      this.narrator.play(hit.info.kind === 'jar' ? (allDone ? 'mission-done' : `mission-${this.currentMission()}`) : `info-${hit.info.id}`);
       this.panel.placeInFront(pos, dir, !!hit.info.image);
       this.sfx.click();
       this.pulse(src, 0.4, 60);
@@ -709,6 +723,7 @@ export class Engine {
   }
 
   closePanel() {
+    this.narrator.stop();
     this.panel.hide();
     this.backpack.hide();
     this.setState({ inspecting: null, backpackOpen: false });

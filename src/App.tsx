@@ -1,5 +1,5 @@
 import { useRef, useState } from 'react';
-import { Backpack, Compass, Gamepad2, MousePointerClick, RotateCcw, Trophy, X } from 'lucide-react';
+import { Backpack, Compass, Gamepad2, MousePointerClick, RotateCcw, Trophy, Volume2, VolumeX, X } from 'lucide-react';
 import VRSceneCanvas from './components/VRSceneCanvas';
 import type { Engine, GameState } from './game/Engine';
 import { ARTIFACTS, ZONES, artifactsInZone, type Artifact, type ZoneId } from './data/artifacts';
@@ -23,7 +23,7 @@ function Thumb({ a }: { a: Artifact }) {
 export default function App() {
   const engineRef = useRef<Engine | null>(null);
   const [maybeState, setState] = useState<GameState | null>(null);
-  const state: GameState = maybeState ?? { zone: 'treehouse', discovered: [], inXR: false, inspecting: null, backpackOpen: false };
+  const state: GameState = maybeState ?? { zone: 'treehouse', discovered: [], inXR: false, inspecting: null, backpackOpen: false, voiceOn: true };
   const [showHelp, setShowHelp] = useState(true);
 
   const found = state.discovered.length;
@@ -127,6 +127,13 @@ export default function App() {
                 title="Backpack (B)"
               >
                 <Backpack size={14} /> Backpack {found}/{total}
+              </button>
+              <button
+                onClick={() => engineRef.current?.toggleVoice()}
+                className="flex items-center gap-1 rounded-full bg-stone-900/80 px-4 py-3 text-xs font-semibold text-amber-100/80 hover:bg-stone-800"
+                title="Narrator voice on/off"
+              >
+                {state.voiceOn ? <Volume2 size={14} /> : <VolumeX size={14} />} Voice {state.voiceOn ? 'on' : 'off'}
               </button>
               <button
                 onClick={() => { if (confirm('Reset all collected artifacts?')) engineRef.current?.resetProgress(); }}
