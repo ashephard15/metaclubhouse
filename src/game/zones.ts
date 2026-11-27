@@ -7,7 +7,7 @@ export interface PortalDef { target: ZoneId; position: [number, number, number] 
 export const PORTALS: Record<ZoneId, PortalDef[]> = {
   // The Clubhouse portal is the painted archway (see Engine.spawnTimePortal); it goes where the mission says.
   treehouse: [],
-  egypt: [ { target: 'treehouse', position: [0, 0, -3.0] } ], // stands over the big painted portal in the wall
+  egypt: [], // The return hotspot uses the arch painted into the panorama.
   nile: [ { target: 'treehouse', position: [0, 0, -5.6] } ],
   // On the boat there is no arch: the portal you arrived through hangs behind you at the stern.
   river: [ { target: 'treehouse', position: [0, 0, 7.0] } ],
@@ -316,22 +316,31 @@ export function buildZone(id: ZoneId, panorama = false): { group: THREE.Group; f
 
   // With a panorama, fade the floor's rim so it blends into the backdrop's ground
   if (panorama) {
-    floor.geometry.dispose();
-    floor.geometry = new THREE.CircleGeometry(11, 64);
-    const c = document.createElement('canvas');
-    c.width = c.height = 256;
-    const ctx = c.getContext('2d')!;
-    const grad = ctx.createRadialGradient(128, 128, 0, 128, 128, 128);
-    grad.addColorStop(0, '#fff');
-    grad.addColorStop(0.68, '#fff');
-    grad.addColorStop(1, '#000');
-    ctx.fillStyle = grad;
-    ctx.fillRect(0, 0, 256, 256);
     // Invisible floor: the panorama's painted ground shows through, the floor only catches shadows
     (floor.material as THREE.Material).dispose();
     floor.material = new THREE.ShadowMaterial({ opacity: 0.28, transparent: true, depthWrite: false });
   }
 
   if (!panorama) g.add(far);
+  else far.traverse((object) => {
+    if (object instanceof THREE.Mesh) {
+      object.geometry.dispose();
+      (object.material as THREE.Material).dispose();
+    }
+  });
+
+  if (id === 'egypt' && panorama) {
+    // Paired inlays mark the approach while leaving the painted paving visible.
+    const stone = std(0x885c3d, { roughness: 0.95 });
+    const tile = new THREE.BoxGeometry(0.19, 0.025, 0.34);
+    for (const x of [-0.94, 0.94]) {
+      for (let row = 0; row < 5; row++) {
+        const inlay = new THREE.Mesh(tile, stone);
+        inlay.position.set(x, 0.008, 3.1 - row * 0.82);
+        inlay.receiveShadow = true;
+        g.add(inlay);
+      }
+    }
+  }
   return { group: g, floor };
 }

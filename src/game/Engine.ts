@@ -2,17 +2,15 @@ import * as THREE from 'three';
 import { VRButton } from 'three/examples/jsm/webxr/VRButton.js';
 import { GroundedSkybox } from 'three/examples/jsm/objects/GroundedSkybox.js';
 
-/** Camera height the panoramas were painted from (metres). */
-const EYE_HEIGHT = 1.6;
 import { XRControllerModelFactory } from 'three/examples/jsm/webxr/XRControllerModelFactory.js';
 import { XRHandModelFactory } from 'three/examples/jsm/webxr/XRHandModelFactory.js';
-import { ARTIFACTS, ZONES, artifactsInZone, infoPointsInZone, propsInZone, type Artifact, type InfoPoint, type ZoneId } from '../data/artifacts';
+import { ARTIFACTS, MISSION_JAR, ZONES, artifactsInZone, infoPointsInZone, propsInZone, type Artifact, type InfoPoint, type ZoneId } from '../data/artifacts';
 import { buildArtifactModel, pedestal, roundTable, std } from './models';
 import { buildZone, PORTALS, SPAWN, WALK_AREA } from './zones';
 
 const MISSION_ORDER: ZoneId[] = ['egypt', 'nile', 'river', 'pyramid', 'tomb'];
 /** Direction of the painted portal in the Clubhouse panorama, degrees right of straight ahead at spawn. */
-const CLUB_PORTAL_DEG = 98;
+const CLUB_PORTAL_DEG = 85;
 import { InfoPanel } from './InfoPanel';
 import { BackpackPanel } from './BackpackPanel';
 import { CanvasPlane, makeLabel, roundRect, wrapText } from './canvasText';
@@ -36,6 +34,9 @@ type Hit =
 const STORAGE_KEY = 'time-explorers-progress-v1';
 const BASE = import.meta.env.BASE_URL;
 const UP = new THREE.Vector3(0, 1, 0);
+const EYE_HEIGHT = 1.6;
+const STICK_DEADZONE = 0.2;
+const MISSION_TABLE_RADIUS = 1.35;
 
 interface ControllerRig {
   target: THREE.XRTargetRaySpace;
@@ -83,7 +84,9 @@ export class Engine {
   private desktopHover: Hit | null = null;
 
   // xr locomotion
-  private snapCooldown = 0;
+  private snapLatched = false;
+  private disposed = false;
+  private sceneRevision = 0;
 
   state: GameState;
   private listeners = new Set<(s: GameState) => void>();
@@ -105,7 +108,7 @@ export class Engine {
 
     this.camera = new THREE.PerspectiveCamera(70, container.clientWidth / container.clientHeight, 0.05, 400);
     this.camera.rotation.order = 'YXZ';
-    this.camera.position.set(0, 1.6, 0);
+    this.camera.position.set(0, EYE_HEIGHT, 0);
     this.rig.add(this.camera);
     this.scene.add(this.rig, this.zoneGroup, this.dynamicGroup, this.panel.group, this.backpack.group);
 
@@ -126,6 +129,8 @@ export class Engine {
     this.loadZone('treehouse');
 
     this.renderer.xr.addEventListener('sessionstart', () => {
+      this.snapLatched = false;
+      this.buttonWasDown.clear();
       this.camera.position.set(0, 0, 0);
       this.camera.rotation.set(0, 0, 0);
       this.panel.hide();
@@ -133,7 +138,7 @@ export class Engine {
       this.setState({ inXR: true, inspecting: null, backpackOpen: false });
     });
     this.renderer.xr.addEventListener('sessionend', () => {
-      this.camera.position.set(0, 1.6, 0);
+      this.camera.position.set(0, EYE_HEIGHT, 0);
       this.camera.rotation.set(this.pitch, this.yaw, 0);
       this.rig.rotation.set(0, 0, 0);
       this.setState({ inXR: false });
@@ -191,6 +196,12 @@ export class Engine {
   }
 
   private loadZone(id: ZoneId) {
+    this.sceneRevision++;
+    this.desktopHover = null;
+    for (const controller of this.controllers) {
+      controller.hovered = null;
+      controller.reticle.visible = false;
+    }
     this.disposeTree(this.zoneGroup);
     this.disposeTree(this.dynamicGroup);
     this.zoneGroup.clear();
@@ -208,7 +219,7 @@ export class Engine {
     this.hemi.color.set(id === 'treehouse' && pano ? 0xffe2b8 : indoorDim ? 0xfff0dd : 0xffffff);
     this.hemi.intensity = indoorDim ? 1.0 : 1.3;
     this.sun.intensity = indoorDim ? 0.6 : id === 'treehouse' && pano ? 1.4 : id === 'egypt' ? 3 : 2.4;
-    this.setPanorama(z.panorama, z.panoramaYaw ?? 0);
+    this.setPanorama(id);
 
     const { group, floor } = buildZone(id, pano);
     this.floor = floor;
@@ -222,7 +233,7 @@ export class Engine {
       this.dynamicGroup.add(title.mesh);
     }
     for (const p of propsInZone(id)) {
-      const g = this.sprite(`props/${p.image}.png`, p.height, { flat: p.flat, billboard: !p.fixed && !p.flat, shadow: !p.fixed && !p.flat && p.position[1] === 0 });
+      const g = this.sprite(`props/${p.image}.png`, p.height, { flat: p.flat, billboard: !p.fixed && !p.flat, shadow: !p.flat && p.position[1] === 0 });
       g.position.set(...p.position);
       if (p.fixed) g.lookAt(SPAWN.x, p.position[1], SPAWN.z);
       this.dynamicGroup.add(g);
@@ -231,6 +242,7 @@ export class Engine {
     for (const a of artifactsInZone(id)) this.spawnArtifact(a);
     for (const p of PORTALS[id]) this.spawnPortal(p.target, p.position, id);
     if (id === 'treehouse') this.spawnTimePortal();
+    if (id === 'egypt') this.spawnDoorway('treehouse', 0, 5.8, 'Back to the Clubhouse', 3.1, 3.2);
     // Doorways painted in the panoramas: pyramid entrance straight ahead; tomb exit is the corridor behind you
     if (id === 'pyramid') this.spawnDoorway('tomb', 0, 9, 'Enter the Pyramid');
     if (id === 'tomb') this.spawnDoorway('pyramid', -164, 7, 'Back outside');
@@ -253,11 +265,11 @@ export class Engine {
    * 360° backdrop on a large inward-facing sphere centred on the play area at eye height.
    * The 3D floor and all interactive objects sit inside it, so WebXR depth and movement are preserved.
    */
-  private setPanorama(path: string | undefined, yawDeg: number) {
+  private setPanorama(id: ZoneId) {
+    const { panorama: path, panoramaYaw = 0 } = ZONES[id];
     if (this.panoSphere) { this.panoSphere.visible = false; }
     if (!path) return;
     const apply = (tex: THREE.Texture) => {
-      if (ZONES[this.state.zone].panorama !== path) return;
       // Ground-projected backdrop: the painted floor is laid on the real floor plane,
       // so objects placed in the world stand on it instead of floating in front of it.
       if (this.panoSphere) { this.scene.remove(this.panoSphere); this.panoSphere.geometry.dispose(); (this.panoSphere.material as THREE.Material).dispose(); }
@@ -266,17 +278,18 @@ export class Engine {
       (sky.material as THREE.MeshBasicMaterial).fog = false;
       sky.renderOrder = -1;
       sky.position.set(SPAWN.x, EYE_HEIGHT - 0.01, SPAWN.z);
-      sky.rotation.y = Math.PI / 2 + THREE.MathUtils.degToRad(yawDeg);
+      sky.rotation.y = Math.PI / 2 + THREE.MathUtils.degToRad(panoramaYaw);
       this.panoSphere = sky;
       this.scene.add(sky);
     };
     const cached = this.panoTextures.get(path);
     if (cached) { apply(cached); return; }
     this.textureLoader.load(`${BASE}assets/${path}`, (tex) => {
+      if (this.disposed || this.panoTextures.has(path)) { tex.dispose(); return; }
       tex.colorSpace = THREE.SRGBColorSpace;
       tex.anisotropy = 8;
       this.panoTextures.set(path, tex);
-      apply(tex);
+      if (this.state.zone === id) apply(tex);
     });
   }
 
@@ -286,6 +299,7 @@ export class Engine {
   /** A transparent PNG standing on the floor (bottom-anchored), or lying flat. Keeps the image's aspect ratio. */
   private sprite(path: string, height: number, opts: { flat?: boolean; billboard?: boolean; shadow?: boolean; back?: number } = {}): THREE.Group {
     const g = new THREE.Group();
+    const revision = this.sceneRevision;
     if (opts.billboard) g.userData.billboard = true;
     if (opts.shadow) {
       if (!this.blobTex) {
@@ -307,6 +321,7 @@ export class Engine {
       g.add(blob);
     }
     this.textureLoader.load(`${BASE}assets/${path}`, (tex) => {
+      if (this.disposed || revision !== this.sceneRevision) { tex.dispose(); return; }
       tex.colorSpace = THREE.SRGBColorSpace;
       tex.anisotropy = 8;
       const img = tex.image as HTMLImageElement;
@@ -331,7 +346,12 @@ export class Engine {
     node.position.set(...a.position);
     if (a.static) node.lookAt(SPAWN.x, a.position[1], SPAWN.z);
     const model = buildArtifactModel(a.shape, a.color);
-    if (a.zone !== 'treehouse') model.scale.setScalar(1.8); // stand-in models read too small next to the painted scenery
+    const standH = a.standHeight ?? (a.zone === 'nile' ? 0.8 : 0.75);
+    if (a.zone !== 'treehouse') model.scale.setScalar(1.8);
+    if (a.static) {
+      const bottom = new THREE.Box3().setFromObject(model).min.y;
+      model.position.y = standH - a.position[1] - bottom;
+    }
     node.add(model);
     node.userData.artifact = a;
 
@@ -339,6 +359,7 @@ export class Engine {
     this.textureLoader.load(
       `${BASE}assets/cutouts/${a.cutout}`,
       (tex) => {
+        if (this.disposed || !node.parent) { tex.dispose(); return; }
         const img = tex.image as HTMLImageElement;
         if (!img?.width) return;
         tex.colorSpace = THREE.SRGBColorSpace;
@@ -348,7 +369,7 @@ export class Engine {
           new THREE.PlaneGeometry(w, h),
           new THREE.MeshBasicMaterial({ map: tex, transparent: true, alphaTest: 0.05, side: THREE.DoubleSide }),
         );
-        plane.userData.billboard = !a.lieFlat;
+        plane.userData.billboard = !a.lieFlat && !a.static;
         if (a.lieFlat) {
           plane.geometry.dispose();
           plane.geometry = new THREE.PlaneGeometry(h, (h * img.height) / img.width);
@@ -356,7 +377,7 @@ export class Engine {
           plane.userData.noSpin = true;
         }
         // Set pieces stand on their stand (or the ground) instead of floating
-        if (a.static) plane.position.y = (a.standHeight ?? 0.75) + h / 2 - a.position[1];
+        if (a.static) plane.position.y = standH + h / 2 - a.position[1];
         node.remove(model);
         this.disposeTree(model);
         node.add(plane);
@@ -366,15 +387,24 @@ export class Engine {
     );
 
     // Stand under the artifact, styled per zone
-    const standH = a.standHeight ?? (a.zone === 'nile' ? 0.8 : 0.75);
     if (standH > 0) {
       const style = { treehouse: [0x8e5a2b, 0.7, false], egypt: [0xc2a26a, 0.6, false], nile: [0x9a7a52, 0.6, true], river: [0x7a4f2a, 0.55, false], pyramid: [0xd8c39a, 0.6, false], tomb: [0xc9a676, 0.6, false] } as const;
       const [color, width, glass] = style[a.zone];
       const stand =
         a.zone === 'treehouse' ? this.sprite('props/tree-stump.png', standH + 0.12, { billboard: true, shadow: true })
-        : a.zone === 'egypt' || a.zone === 'pyramid' ? this.sprite('props/egypt-pedestal.png', standH + 0.06, { billboard: true, shadow: true, back: 0.12 })
+        : a.zone === 'egypt' || a.zone === 'pyramid' ? pedestal(color, standH, a.static ? 1.05 : 0.78)
         : a.zone === 'nile' ? this.sprite('props/nile-display-stand.png', standH * 2, { billboard: true, shadow: true, back: 0.18 })
         : pedestal(color, standH, width, glass && !a.static);
+      if (a.zone === 'egypt' || a.zone === 'pyramid') {
+        const edge = a.static ? 1.05 : 0.78;
+        const band = std(0x9b754e, { roughness: 0.9 });
+        for (const y of [0.04, standH - 0.04]) {
+          const trim = new THREE.Mesh(new THREE.BoxGeometry(edge + 0.1, 0.08, edge + 0.1), band);
+          trim.position.y = y;
+          trim.receiveShadow = true;
+          stand.add(trim);
+        }
+      }
       stand.position.set(a.position[0], 0, a.position[2]);
       this.dynamicGroup.add(stand);
     }
@@ -410,36 +440,24 @@ export class Engine {
 
   /** Invisible hit area over the painted Clubhouse portal; entering follows the current mission. */
   private spawnTimePortal() {
-    const yaw = THREE.MathUtils.degToRad(CLUB_PORTAL_DEG);
-    const node = new THREE.Group();
-    node.position.set(SPAWN.x + Math.sin(yaw) * 6, 0, SPAWN.z - Math.cos(yaw) * 6);
-    node.lookAt(SPAWN.x, 0, SPAWN.z);
-    const hit = new THREE.Mesh(new THREE.PlaneGeometry(2.4, 3.2), new THREE.MeshBasicMaterial({ visible: false }));
-    hit.position.y = 1.5;
-    hit.userData.portal = 'mission';
-    const label = makeLabel('Time Portal', 1.4);
-    label.mesh.position.y = 3.35;
-    this.labels.push(label);
-    node.add(hit, label.mesh);
-    this.dynamicGroup.add(node);
-    this.portalNodes.push({ target: 'egypt', node, swirl: hit });
+    this.spawnDoorway('mission', CLUB_PORTAL_DEG, 6, 'Time Portal', 2.4, 3.2);
   }
 
   /** Invisible hit area over a doorway painted in the panorama. yawDeg: degrees right of straight ahead at spawn. */
-  private spawnDoorway(target: ZoneId, yawDeg: number, dist: number, text: string) {
+  private spawnDoorway(target: ZoneId | 'mission', yawDeg: number, dist: number, text: string, width = 2.6, height = 4) {
     const yaw = THREE.MathUtils.degToRad(yawDeg);
     const node = new THREE.Group();
     node.position.set(SPAWN.x + Math.sin(yaw) * dist, 0, SPAWN.z - Math.cos(yaw) * dist);
     node.lookAt(SPAWN.x, 0, SPAWN.z);
-    const hit = new THREE.Mesh(new THREE.PlaneGeometry(2.6, 4), new THREE.MeshBasicMaterial({ visible: false }));
-    hit.position.y = 2;
+    const hit = new THREE.Mesh(new THREE.PlaneGeometry(width, height), new THREE.MeshBasicMaterial({ visible: false, side: THREE.DoubleSide }));
+    hit.position.y = height / 2;
     hit.userData.portal = target;
     const label = makeLabel(text, 1.6);
-    label.mesh.position.y = 3.2;
+    label.mesh.position.y = height * 0.83;
     this.labels.push(label);
     node.add(hit, label.mesh);
     this.dynamicGroup.add(node);
-    this.portalNodes.push({ target, node, swirl: hit });
+    this.portalNodes.push({ target: target === 'mission' ? 'egypt' : target, node, swirl: hit });
   }
 
   /** Mission order: Egypt, then the Nile. Returns the zone the Time Portal sends the explorer to. */
@@ -498,11 +516,10 @@ export class Engine {
     label.mesh.position.y = 2.7;
     // Destination-themed stone arch (transparent PNG); the swirl shows through its opening
     const arch = ({
-      egypt: { img: 'props/egypt-portal-arch.png', cy: 0.475, w: 0.49 * 0.92, h: 0.53 },
       nile: { img: 'props/nile-portal-arch.png', cy: 0.455, w: 0.52 * 0.87, h: 0.59 },
     } as Partial<Record<ZoneId, { img: string; cy: number; w: number; h: number }>>)[zone];
     if (arch) {
-      const H = zone === 'egypt' ? 6.6 : 3.6; // Egypt: covers the painted wall portal
+      const H = 3.6;
       frame.visible = false;
       node.add(this.sprite(arch.img, H));
       swirl.position.set(0, arch.cy * H, -0.03);
@@ -524,7 +541,7 @@ export class Engine {
     let face: THREE.Mesh;
     if (p.kind === 'jar') {
       // Round table in the middle of the room; the Mission Jar stands raised in its centre
-      node.add(roundTable(1.35, 0.8));
+      node.add(roundTable(MISSION_TABLE_RADIUS, 0.8));
       const riser = new THREE.Mesh(new THREE.CylinderGeometry(0.32, 0.36, 0.16, 24), std(0x8e5a2b, { roughness: 0.9 }));
       riser.position.set(0, 0.88, -0.5);
       riser.castShadow = true;
@@ -662,7 +679,7 @@ export class Engine {
         if (o.userData.artifact) return { kind: 'artifact', artifact: o.userData.artifact, point: h.point };
         o = o.parent;
       }
-      if (h.object === this.floor) return { kind: 'floor', point: h.point };
+      if (h.object === this.floor && this.isWalkable(h.point)) return { kind: 'floor', point: h.point };
     }
     return null;
   }
@@ -742,6 +759,14 @@ export class Engine {
     return v;
   }
 
+  private isWalkable(v: THREE.Vector3) {
+    const { rx, rz } = WALK_AREA[this.state.zone];
+    if (Math.hypot(v.x / rx, v.z / rz) > 1 + 1e-8) return false;
+    if (this.state.zone !== 'treehouse') return true;
+    const [x, , z] = MISSION_JAR.position;
+    return Math.hypot(v.x - x, v.z - z) >= MISSION_TABLE_RADIUS;
+  }
+
   private pulse(src: XRInputSource | null, intensity: number, ms: number) {
     const act = src?.gamepad?.hapticActuators?.[0] as { pulse?: (i: number, d: number) => void } | undefined;
     act?.pulse?.(intensity, ms);
@@ -766,7 +791,13 @@ export class Engine {
 
       const rig: ControllerRig = { target, line, reticle, source: null, hovered: null };
       target.addEventListener('connected', (e) => { rig.source = (e as unknown as { data: XRInputSource }).data; });
-      target.addEventListener('disconnected', () => { rig.source = null; reticle.visible = false; });
+      target.addEventListener('disconnected', () => {
+        if (rig.source) this.buttonWasDown.delete(rig.source);
+        if (rig.source?.handedness === 'right') this.snapLatched = false;
+        rig.source = null;
+        rig.hovered = null;
+        reticle.visible = false;
+      });
       target.addEventListener('select', () => this.activate(rig.hovered, rig.source));
       this.rig.add(target);
 
@@ -810,7 +841,6 @@ export class Engine {
     // thumbsticks
     const session = this.renderer.xr.getSession();
     if (!session) return;
-    this.snapCooldown -= dt;
     for (const src of session.inputSources) {
       const gp = src.gamepad;
       if (!gp) continue;
@@ -818,22 +848,24 @@ export class Engine {
       const down = !!gp.buttons[5]?.pressed;
       if (down && !this.buttonWasDown.get(src)) this.toggleBackpack();
       this.buttonWasDown.set(src, down);
-      if (gp.axes.length < 4) continue;
+      if (gp.mapping !== 'xr-standard' || gp.axes.length < 4) continue;
       const x = gp.axes[2], y = gp.axes[3];
       if (src.handedness === 'left') {
-        if (Math.abs(x) > 0.15 || Math.abs(y) > 0.15) {
+        const magnitude = Math.hypot(x, y);
+        if (magnitude > STICK_DEADZONE && !this.panel.isOpen && !this.backpack.isOpen) {
           const { dir } = this.headPose();
           dir.y = 0; dir.normalize();
           const right = new THREE.Vector3().crossVectors(dir, UP).normalize();
-          const move = dir.multiplyScalar(-y).addScaledVector(right, x).multiplyScalar(2.0 * dt);
+          const speed = (Math.min(magnitude, 1) - STICK_DEADZONE) / (1 - STICK_DEADZONE);
+          const move = dir.multiplyScalar(-y).addScaledVector(right, x).normalize().multiplyScalar(1.4 * speed * dt);
           this.moveRig(move);
         }
       } else if (src.handedness === 'right') {
-        if (Math.abs(x) > 0.7 && this.snapCooldown <= 0) {
-          this.snapTurn(x > 0 ? -Math.PI / 6 : Math.PI / 6);
-          this.snapCooldown = 0.35;
+        if (Math.abs(x) > 0.7 && !this.snapLatched) {
+          this.snapLatched = true;
+          if (!this.panel.isOpen && !this.backpack.isOpen) this.snapTurn(x > 0 ? -Math.PI / 6 : Math.PI / 6);
         }
-        if (Math.abs(x) < 0.3) this.snapCooldown = Math.min(this.snapCooldown, 0);
+        if (Math.abs(x) < 0.3) this.snapLatched = false;
       }
     }
   }
@@ -841,8 +873,10 @@ export class Engine {
   private moveRig(delta: THREE.Vector3) {
     const { pos } = this.headPose();
     const next = this.clampToBounds(new THREE.Vector3(pos.x + delta.x, 0, pos.z + delta.z));
-    this.rig.position.x += next.x - pos.x;
-    this.rig.position.z += next.z - pos.z;
+    if (this.isWalkable(next) || !this.isWalkable(pos)) {
+      this.rig.position.x += next.x - pos.x;
+      this.rig.position.z += next.z - pos.z;
+    }
   }
 
   private snapTurn(angle: number) {
@@ -874,7 +908,7 @@ export class Engine {
     window.addEventListener('keydown', (e) => {
       this.keys.add(e.code);
       if (e.code === 'Escape') this.closePanel();
-      if (e.code === 'KeyB' || e.code === 'KeyI') this.toggleBackpack();
+      if (!e.repeat && (e.code === 'KeyB' || e.code === 'KeyI')) this.toggleBackpack();
     });
     window.addEventListener('keyup', (e) => this.keys.delete(e.code));
     window.addEventListener('blur', () => this.keys.clear());
@@ -915,7 +949,12 @@ export class Engine {
       else if (model && !model.userData.billboard && !model.userData.noSpin) model.rotation.y = t * 0.6;
       n.ring.scale.setScalar(1 + Math.sin(t * 3) * 0.05);
     }
-    for (const p of this.portalNodes) p.swirl.rotation.z = -t * 1.2;
+    for (const p of this.portalNodes) {
+      if (p.swirl.geometry instanceof THREE.CircleGeometry) {
+        const map = (p.swirl.material as THREE.MeshBasicMaterial).map;
+        if (map) { map.center.set(0.5, 0.5); map.rotation = t * 1.2; }
+      }
+    }
     this.flames.forEach((f, i) => f.scale.set(1, 1 + Math.sin(t * 9 + i * 2) * 0.12, 1));
     this.dynamicGroup.traverse((o) => {
       if (o.userData.billboard && !o.userData.noBillboard) {
@@ -937,6 +976,7 @@ export class Engine {
   };
 
   dispose() {
+    this.disposed = true;
     this.renderer.setAnimationLoop(null);
     window.removeEventListener('resize', this.onResize);
     this.disposeTree(this.scene);

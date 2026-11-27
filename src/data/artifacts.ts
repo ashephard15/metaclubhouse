@@ -147,25 +147,25 @@ export const ARTIFACTS: Artifact[] = [
   // ---------- Ancient Egypt Arrival ----------
   {
     id: 'golden-scarab', name: 'Golden Scarab Amulet', zone: 'egypt', shape: 'scarab',
-    cutout: 'golden-scarab.png', position: [-3.22, 1.55, -0.9], color: 0x1abc9c, standHeight: 1.1, cutoutHeight: 1.01,
+    cutout: 'golden-scarab.png', position: [-3.05, 1.4, -1.1], color: 0x1abc9c, standHeight: 1.05, cutoutHeight: 0.52,
     fieldNote: 'Egyptians saw the scarab beetle rolling dung balls and linked it to the god Khepri rolling the Sun across the sky. Scarab amulets stood for rebirth.',
     quiz: { question: 'What did the scarab symbolize in ancient Egypt?', options: ['War', 'Rebirth and the rising Sun', 'Rain'], answerIndex: 1 },
   },
   {
     id: 'ankh', name: 'Ankh', zone: 'egypt', shape: 'ankh',
-    cutout: 'ankh.png', position: [3.22, 1.55, -0.9], color: 0xf1c40f, standHeight: 1.1, cutoutHeight: 1.01,
+    cutout: 'ankh.png', position: [3.05, 1.4, -1.1], color: 0xf1c40f, standHeight: 1.05, cutoutHeight: 0.52,
     fieldNote: 'The ankh is the hieroglyph for "life". Gods are often shown holding it out to pharaohs.',
     quiz: { question: 'The ankh hieroglyph means…', options: ['Life', 'Water', 'King'], answerIndex: 0 },
   },
   {
     id: 'papyrus-scroll', name: 'Papyrus Scroll', zone: 'egypt', shape: 'papyrus',
-    cutout: 'papyrus-scroll.png', position: [-3.07, 1.55, 2.16], color: 0xdcc48e, standHeight: 1.1, cutoutHeight: 1.01,
+    cutout: 'papyrus-scroll.png', position: [-3.05, 1.4, 1.8], color: 0xdcc48e, standHeight: 1.05, cutoutHeight: 0.52,
     fieldNote: 'Papyrus paper was made from reeds that grew along the Nile. Strips were laid crosswise, pressed and dried into sheets.',
     quiz: { question: 'Papyrus paper was made from…', options: ['Tree bark', 'Nile river reeds', 'Animal skin'], answerIndex: 1 },
   },
   {
     id: 'canopic-jar', name: 'Canopic Jar', zone: 'egypt', shape: 'canopic',
-    cutout: 'canopic-jar.png', position: [3.07, 1.55, 2.16], color: 0xbfa77a, standHeight: 1.1, cutoutHeight: 1.01,
+    cutout: 'canopic-jar.png', position: [3.05, 1.4, 1.8], color: 0xbfa77a, standHeight: 1.05, cutoutHeight: 0.52,
     fieldNote: 'During mummification, organs were stored in four canopic jars, each protected by one of the four Sons of Horus.',
     quiz: { question: 'How many canopic jars were usually used?', options: ['Two', 'Four', 'Ten'], answerIndex: 1 },
   },
@@ -185,7 +185,7 @@ export const ARTIFACTS: Artifact[] = [
   },
   {
     id: 'nile-discovery', name: 'Nile Scroll Map', zone: 'egypt', shape: 'mapTable',
-    cutout: 'nile-discovery.png', position: [3.3, 0.9, 1.0], color: 0xe2cc93, standHeight: 0, cutoutHeight: 2.36, static: true,
+    cutout: 'nile-discovery.png', position: [5.0, 0.75, -2.25], color: 0xe2cc93, standHeight: 0, cutoutHeight: 1.5, static: true,
     inspectImage: 'inspection/egypt_nile_discovery.png',
     fieldNote: 'Every summer the Nile flooded its banks. When the water went down it left rich black mud that was perfect for farming. Egyptians called their land Kemet, the Black Land, after that soil.',
     quiz: { question: 'Why was the Nile\'s yearly flood so important?', options: ['It left rich soil for growing crops', 'It washed away the pyramids', 'It made the desert colder'], answerIndex: 0 },
@@ -282,31 +282,31 @@ export const ARTIFACTS: Artifact[] = [
   // ---------- Pharaoh's Tomb (inside the Great Pyramid) ----------
   {
     id: 'sarcophagus', name: 'Golden Sarcophagus', zone: 'tomb', shape: 'chest',
-    cutout: 'sarcophagus.png', position: [0, 0.6, 1.6], color: 0xd4af37, standHeight: 0, cutoutHeight: 1.2, static: true,
+    cutout: 'sarcophagus.png', position: [0, 1.05, -3.75], color: 0xd4af37, standHeight: 0.45, cutoutHeight: 1.2, static: true,
     fieldNote: 'A pharaoh\'s mummy was placed in nested coffins, often shaped like the king with arms crossed holding a crook and flail, the symbols of royal power. These went inside a huge stone box called a sarcophagus. Khufu\'s own sarcophagus is made of red granite and still sits inside the Great Pyramid.',
     quiz: { question: 'What did the pharaoh hold on his coffin as symbols of power?', options: ['A sword and shield', 'A crook and flail', 'A bow and arrow'], answerIndex: 1 },
   },
   {
     id: 'canopic-set', name: 'Four Canopic Jars', zone: 'tomb', shape: 'canopic',
-    cutout: 'canopic-jars.png', position: [-2.4, 0.4, 2.6], color: 0xd9b77a, standHeight: 0, cutoutHeight: 0.8, static: true,
+    cutout: 'canopic-jars.png', position: [-3.1, 1, -0.55], color: 0xd9b77a, standHeight: 0.6, cutoutHeight: 0.8, static: true,
     fieldNote: 'Each canopic jar was protected by one of the four Sons of Horus: human-headed Imsety guarded the liver, baboon-headed Hapy the lungs, jackal-headed Duamutef the stomach, and falcon-headed Qebehsenuef the intestines.',
     quiz: { question: 'Which Son of Horus had the head of a baboon?', options: ['Imsety', 'Hapy', 'Qebehsenuef'], answerIndex: 1 },
   },
   {
     id: 'offering-table', name: 'Offering Table', zone: 'tomb', shape: 'mapTable',
-    cutout: 'offering-table.png', position: [2.4, 0.5, 2.6], color: 0xd9b77a, standHeight: 0, cutoutHeight: 1.0, static: true,
+    cutout: 'offering-table.png', position: [3.1, 0.5, -0.55], color: 0xd9b77a, standHeight: 0, cutoutHeight: 1.0, static: true,
     fieldNote: 'Egyptians believed the spirit, called the ka, still needed food in the afterlife. Families and priests left bread, fruit, beer and other offerings, and pictures of food carved on tomb walls were thought to keep feeding the spirit forever.',
     quiz: { question: 'Why did Egyptians leave food in tombs?', options: ['To feed the spirit (ka) in the afterlife', 'For the workers\' lunch', 'To attract animals'], answerIndex: 0 },
   },
   {
     id: 'treasure-chest', name: 'Treasure Chest', zone: 'tomb', shape: 'chest',
-    cutout: 'treasure-chest.png', position: [-2.6, 0.4, 4.6], color: 0xd4af37, standHeight: 0, cutoutHeight: 0.8, static: true,
+    cutout: 'treasure-chest.png', position: [-3.8, 0.4, 1.65], color: 0xd4af37, standHeight: 0, cutoutHeight: 0.8, static: true,
     fieldNote: 'Pharaohs were buried with everything they might need in the afterlife: furniture, clothes, jewellery, games and chariots. Sadly, almost every pyramid was robbed in ancient times, which is why later pharaohs were buried in hidden tombs in the Valley of the Kings.',
     quiz: { question: 'Why did later pharaohs stop building pyramids for their tombs?', options: ['They ran out of stone', 'Pyramids were easy targets for tomb robbers', 'Pyramids were too small'], answerIndex: 1 },
   },
   {
     id: 'pharaoh-statue', name: 'Pharaoh Statue', zone: 'tomb', shape: 'stela',
-    cutout: 'pharaoh-statue.png', position: [2.6, 1.1, 4.6], color: 0xc9a25a, standHeight: 0, cutoutHeight: 2.2, static: true,
+    cutout: 'pharaoh-statue.png', position: [2.0, 1.1, -3.55], color: 0xc9a25a, standHeight: 0, cutoutHeight: 2.2, static: true,
     fieldNote: 'Statues of the pharaoh were made as a home for his ka, his life force, in case anything happened to his mummy. The striped headcloth is called a nemes, and the rearing cobra on his forehead, the uraeus, showed he was king.',
     quiz: { question: 'What is the striped royal headcloth called?', options: ['A nemes', 'A toga', 'A turban'], answerIndex: 0 },
   },
@@ -338,11 +338,12 @@ export const INFO_POINTS: InfoPoint[] = [
   },
 ];
 
-INFO_POINTS.push({
+export const MISSION_JAR: InfoPoint = {
   id: 'mission-jar', zone: 'treehouse', kind: 'jar', title: 'Mission Jar',
   body: 'Your missions, Time Explorer: 1) Collect the 4 explorer tools here in the Clubhouse. 2) Travel to Ancient Egypt and find 7 artifacts, including the Bastet statue, the hieroglyphic tablet and the Nile scroll map. 3) Visit the Nile Fossil Exhibit and find 4 fossils. Answer each question to fill your backpack!',
   position: [0.4, 0, 1.63],
-});
+};
+INFO_POINTS.push(MISSION_JAR);
 
 /** Decorative cut-out props (transparent PNGs in public/assets/props/). Heights in metres. */
 export interface Prop {
@@ -358,14 +359,16 @@ export interface Prop {
 
 export const PROPS: Prop[] = [
   // Clubhouse: exactly the concept picture's centre (rug, round table, four stumps). Everything else is painted in the room.
-  { zone: 'treehouse', image: 'compass-rug', position: [0.4, 0.012, 1.63], height: 4.6, flat: true },
+  { zone: 'treehouse', image: 'compass-rug', position: [0.4, 0.012, 1.63], height: 4.0, flat: true },
+  { zone: 'treehouse', image: 'telescope', position: [-4.0, 0, 0.1], height: 1.45, fixed: true },
+  { zone: 'treehouse', image: 'basket-1', position: [-3.6, 0, 0.85], height: 0.48, fixed: true },
   { zone: 'treehouse', image: 'tree-stump', position: [-0.76, 0, 2.73], height: 0.7 },
   { zone: 'treehouse', image: 'tree-stump', position: [1.22, 0, 3.01], height: 0.7 },
   { zone: 'treehouse', image: 'tree-stump', position: [-1.13, 0, 1.06], height: 0.7 },
   { zone: 'treehouse', image: 'tree-stump', position: [2.04, 0, 1.5], height: 0.7 },
   // Nile River Voyage props are added when their pictures arrive
   // Tomb
-  { zone: 'tomb', image: 'pharaoh-statue-dark', position: [-2.7, 0, 0.4], height: 2.2 },
+  { zone: 'tomb', image: 'pharaoh-statue-dark', position: [-2.0, 0, -3.55], height: 2.2, fixed: true },
   // Nile
   { zone: 'nile', image: 'dig-basket', position: [-4.4, 0, 0.6], height: 0.65 },
   { zone: 'nile', image: 'potted-plant', position: [5.2, 0, 0.2], height: 1.1 },
