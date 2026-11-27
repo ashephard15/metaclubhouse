@@ -385,7 +385,8 @@ export class Engine {
     if (onTable) ring.scale.setScalar(0.65);
 
     const label = makeLabel(a.name, 0.8);
-    label.mesh.position.set(0, Math.max(box.max.y, 0.23) + 0.1, 0); // model is in node-local space here
+    const picH = a.cutoutHeight ?? 0.45;
+    label.mesh.position.set(0, a.static ? standH + picH - a.position[1] + 0.15 : Math.max(box.max.y, picH / 2) + 0.12, 0);
     label.mesh.userData.billboard = true;
     if (!onTable) node.add(label.mesh); // tabletop items rely on their glow ring; the name shows when selected
     this.labels.push(label);
@@ -478,7 +479,7 @@ export class Engine {
       nile: { img: 'props/nile-portal-arch.png', cy: 0.455, w: 0.52 * 0.87, h: 0.59 },
     } as Partial<Record<ZoneId, { img: string; cy: number; w: number; h: number }>>)[zone];
     if (arch) {
-      const H = 2.7;
+      const H = zone === 'egypt' ? 6.6 : 3.6; // Egypt: covers the painted wall portal
       frame.visible = false;
       node.add(this.sprite(arch.img, H));
       swirl.position.set(0, arch.cy * H, -0.03);
