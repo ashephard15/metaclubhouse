@@ -1,6 +1,5 @@
 import * as THREE from 'three';
 import { VRButton } from 'three/examples/jsm/webxr/VRButton.js';
-import { GroundedSkybox } from 'three/examples/jsm/objects/GroundedSkybox.js';
 
 import { XRControllerModelFactory } from 'three/examples/jsm/webxr/XRControllerModelFactory.js';
 import { XRHandModelFactory } from 'three/examples/jsm/webxr/XRHandModelFactory.js';
@@ -61,7 +60,7 @@ export class Engine {
   private flames: THREE.Object3D[] = [];
   private backpack = new BackpackPanel();
   private buttonWasDown = new Map<XRInputSource, boolean>();
-  private portalNodes: { target: ZoneId; node: THREE.Group; swirl: THREE.Mesh }[] = [];
+  private portalNodes: { target: ZoneId; node: THREE.Group; swirl: THREE.Mesh; control?: THREE.Mesh }[] = [];
   private labels: CanvasPlane[] = [];
   private panel = new InfoPanel();
   private raycaster = new THREE.Raycaster();
@@ -242,7 +241,7 @@ export class Engine {
     for (const a of artifactsInZone(id)) this.spawnArtifact(a);
     for (const p of PORTALS[id]) this.spawnPortal(p.target, p.position, id);
     if (id === 'treehouse') this.spawnTimePortal();
-    if (id === 'egypt') this.spawnDoorway('treehouse', 0, 5.8, 'Back to the Clubhouse', 3.1, 3.2);
+    if (id === 'egypt') this.spawnDoorway('treehouse', 0, 8, 'Return to the Clubhouse', 3.3, 4.6);
     // Doorways painted in the panoramas: pyramid entrance straight ahead; tomb exit is the corridor behind you
     if (id === 'pyramid') this.spawnDoorway('tomb', 0, 9, 'Enter the Pyramid');
     if (id === 'tomb') this.spawnDoorway('pyramid', -164, 7, 'Back outside');
@@ -270,14 +269,14 @@ export class Engine {
     if (this.panoSphere) { this.panoSphere.visible = false; }
     if (!path) return;
     const apply = (tex: THREE.Texture) => {
-      // Ground-projected backdrop: the painted floor is laid on the real floor plane,
-      // so objects placed in the world stand on it instead of floating in front of it.
       if (this.panoSphere) { this.scene.remove(this.panoSphere); this.panoSphere.geometry.dispose(); (this.panoSphere.material as THREE.Material).dispose(); }
-      const sky = new GroundedSkybox(tex, EYE_HEIGHT, 60, 96);
-      (sky.material as THREE.MeshBasicMaterial).toneMapped = false;
-      (sky.material as THREE.MeshBasicMaterial).fog = false;
+      // Keep the equirectangular image on a sphere to preserve the painted proportions.
+      const geometry = new THREE.SphereGeometry(60, 96, 48).scale(1, 1, -1);
+      const sky = new THREE.Mesh(geometry, new THREE.MeshBasicMaterial({
+        map: tex, toneMapped: false, fog: false, depthWrite: false,
+      }));
       sky.renderOrder = -1;
-      sky.position.set(SPAWN.x, EYE_HEIGHT - 0.01, SPAWN.z);
+      sky.position.set(SPAWN.x, EYE_HEIGHT, SPAWN.z);
       sky.rotation.y = Math.PI / 2 + THREE.MathUtils.degToRad(panoramaYaw);
       this.panoSphere = sky;
       this.scene.add(sky);
@@ -440,7 +439,7 @@ export class Engine {
 
   /** Invisible hit area over the painted Clubhouse portal; entering follows the current mission. */
   private spawnTimePortal() {
-    this.spawnDoorway('mission', CLUB_PORTAL_DEG, 6, 'Time Portal', 2.4, 3.2);
+    this.spawnDoorway('mission', CLUB_PORTAL_DEG, 8, 'Enter Time Portal', 3.2, 4.6);
   }
 
   /** Invisible hit area over a doorway painted in the panorama. yawDeg: degrees right of straight ahead at spawn. */
@@ -452,12 +451,13 @@ export class Engine {
     const hit = new THREE.Mesh(new THREE.PlaneGeometry(width, height), new THREE.MeshBasicMaterial({ visible: false, side: THREE.DoubleSide }));
     hit.position.y = height / 2;
     hit.userData.portal = target;
-    const label = makeLabel(text, 1.6);
-    label.mesh.position.y = height * 0.83;
+    const label = makeLabel(text, 2.35, '#fff8e1', 'rgba(45,20,75,0.94)');
+    label.mesh.position.set(0, height * 0.48, 0.02);
+    label.mesh.userData.portal = target;
     this.labels.push(label);
     node.add(hit, label.mesh);
     this.dynamicGroup.add(node);
-    this.portalNodes.push({ target: target === 'mission' ? 'egypt' : target, node, swirl: hit });
+    this.portalNodes.push({ target: target === 'mission' ? 'egypt' : target, node, swirl: hit, control: label.mesh });
   }
 
   /** Mission order: Egypt, then the Nile. Returns the zone the Time Portal sends the explorer to. */
@@ -657,7 +657,10 @@ export class Engine {
     const t: THREE.Object3D[] = [...this.panel.interactiveMeshes, ...this.backpack.interactiveMeshes];
     if (!this.panel.isOpen && !this.backpack.isOpen) {
       for (const n of this.artifactNodes) t.push(n.node);
-      for (const p of this.portalNodes) t.push(p.swirl);
+      for (const p of this.portalNodes) {
+        t.push(p.swirl);
+        if (p.control) t.push(p.control);
+      }
       t.push(...this.infoNodes);
     }
     if (this.floor) t.push(this.floor);
@@ -665,6 +668,7 @@ export class Engine {
   }
 
   private castRay(origin: THREE.Vector3, dir: THREE.Vector3): Hit | null {
+    this.dynamicGroup.updateMatrixWorld();
     this.raycaster.set(origin, dir);
     this.raycaster.far = 30;
     const hits = this.raycaster.intersectObjects(this.interactTargets(), true);
@@ -798,7 +802,9 @@ export class Engine {
         rig.hovered = null;
         reticle.visible = false;
       });
-      target.addEventListener('select', () => this.activate(rig.hovered, rig.source));
+      target.addEventListener('select', () => {
+        if (rig.source?.targetRayMode === 'tracked-pointer') this.activate(this.controllerHit(target), rig.source);
+      });
       this.rig.add(target);
 
       const grip = this.renderer.xr.getControllerGrip(i);
@@ -813,17 +819,19 @@ export class Engine {
     }
   }
 
+  private controllerHit(target: THREE.XRTargetRaySpace, origin = target.getWorldPosition(new THREE.Vector3())) {
+    const rotation = target.getWorldQuaternion(new THREE.Quaternion());
+    return this.castRay(origin, new THREE.Vector3(0, 0, -1).applyQuaternion(rotation));
+  }
+
   private updateControllers(dt: number) {
     const panelHovers: THREE.Object3D[] = [];
     for (const c of this.controllers) {
       if (!c.source || c.source.targetRayMode !== 'tracked-pointer') { c.line.visible = false; c.reticle.visible = false; continue; }
       c.line.visible = true;
       const origin = new THREE.Vector3();
-      const quat = new THREE.Quaternion();
       c.target.getWorldPosition(origin);
-      c.target.getWorldQuaternion(quat);
-      const dir = new THREE.Vector3(0, 0, -1).applyQuaternion(quat);
-      const hit = this.castRay(origin, dir);
+      const hit = this.controllerHit(c.target, origin);
       if (hit?.kind !== c.hovered?.kind || (hit?.kind === 'artifact' && c.hovered?.kind === 'artifact' && hit.artifact !== c.hovered.artifact)) {
         if (hit && hit.kind !== 'floor') this.pulse(c.source, 0.15, 20);
       }
@@ -890,10 +898,13 @@ export class Engine {
   // ---------------- desktop ----------------
   private setupDesktopInput() {
     const el = this.renderer.domElement;
-    el.addEventListener('pointerdown', (e) => { this.dragging = true; this.dragDist = 0; el.setPointerCapture(e.pointerId); });
-    el.addEventListener('pointermove', (e) => {
+    const trackPointer = (e: PointerEvent) => {
       const r = el.getBoundingClientRect();
       this.mouse.set(((e.clientX - r.left) / r.width) * 2 - 1, -((e.clientY - r.top) / r.height) * 2 + 1);
+    };
+    el.addEventListener('pointerdown', (e) => { this.dragging = true; this.dragDist = 0; el.setPointerCapture(e.pointerId); });
+    el.addEventListener('pointermove', (e) => {
+      trackPointer(e);
       if (this.dragging && !this.renderer.xr.isPresenting) {
         this.dragDist += Math.abs(e.movementX) + Math.abs(e.movementY);
         this.yaw -= e.movementX * 0.004;
@@ -901,10 +912,14 @@ export class Engine {
         this.camera.rotation.set(this.pitch, this.yaw, 0);
       }
     });
-    el.addEventListener('pointerup', () => {
+    el.addEventListener('pointerup', (e) => {
       this.dragging = false;
-      if (this.dragDist < 6) this.activate(this.desktopHover, null);
+      if (this.dragDist < 6) {
+        trackPointer(e);
+        this.activate(this.desktopHit(), null);
+      }
     });
+    el.addEventListener('pointercancel', () => { this.dragging = false; });
     window.addEventListener('keydown', (e) => {
       this.keys.add(e.code);
       if (e.code === 'Escape') this.closePanel();
@@ -912,6 +927,12 @@ export class Engine {
     });
     window.addEventListener('keyup', (e) => this.keys.delete(e.code));
     window.addEventListener('blur', () => this.keys.clear());
+  }
+
+  private desktopHit() {
+    this.camera.updateWorldMatrix(true, false);
+    this.raycaster.setFromCamera(this.mouse, this.camera);
+    return this.castRay(this.raycaster.ray.origin, this.raycaster.ray.direction);
   }
 
   private updateDesktop(dt: number) {
@@ -923,8 +944,7 @@ export class Engine {
       const right = new THREE.Vector3(Math.cos(this.yaw), 0, -Math.sin(this.yaw));
       this.moveRig(fwd.multiplyScalar(f).addScaledVector(right, s).normalize().multiplyScalar(3 * dt));
     }
-    this.raycaster.setFromCamera(this.mouse, this.camera);
-    const hit = this.castRay(this.raycaster.ray.origin.clone(), this.raycaster.ray.direction.clone());
+    const hit = this.desktopHit();
     this.desktopHover = hit && hit.kind !== 'floor' ? hit : null;
     this.renderer.domElement.style.cursor = this.desktopHover ? 'pointer' : this.dragging ? 'grabbing' : 'grab';
     this.panel.setHovered(hit?.kind === 'panel' ? hit.object : null);
