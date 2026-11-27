@@ -48,4 +48,4 @@ Desktop-only development: `npm run dev` → http://localhost:5173.
 - **`meta-store-submission/`**: Meta Horizon Store covers, icon and concept screenshots. Replace the screenshots with real in-game captures before submitting, because Meta requires screenshots to show actual app content without extra overlays.
 
 ## Testing status
-Tested in desktop Chrome: all zones, inspection panels, quizzes, backpack and saved progress. The WebXR paths (controllers, hands, teleport, snap-turn, the in-headset backpack and its B/Y button) are written against the WebXR API but have **not yet been tested on a Quest headset**.
+Tested in desktop Chrome: all six zones, portals, doorways, quizzes, backpack and saved progress. Live build: https://ashephard15.github.io/metaclubhouse/. The WebXR paths (controllers, hands, teleport, snap-turn, in-headset backpack) are being tested on Meta Quest 3.
