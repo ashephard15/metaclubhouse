@@ -61,16 +61,19 @@ export class CanvasPlane {
 
 /** Simple floating label (always readable from front). */
 export function makeLabel(text: string, metresW = 1.4, color = '#fff8e1', bg = 'rgba(20,14,8,0.75)'): CanvasPlane {
-  const p = new CanvasPlane(512, 128, metresW);
+  const p = new CanvasPlane(1024, 220, metresW); // high-res so text stays crisp up close and in the headset
+  (p.texture as THREE.Texture).generateMipmaps = true;
+  p.texture.minFilter = THREE.LinearMipmapLinearFilter;
   p.draw((ctx, w, h) => {
     ctx.fillStyle = bg;
-    roundRect(ctx, 4, 4, w - 8, h - 8, 40);
+    roundRect(ctx, 6, 6, w - 12, h - 12, 80);
     ctx.fill();
     ctx.fillStyle = color;
-    ctx.font = 'bold 52px system-ui, sans-serif';
+    let size = 112;
+    do { ctx.font = `bold ${size}px system-ui, sans-serif`; size -= 4; } while (ctx.measureText(text).width > w - 90 && size > 40);
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
-    ctx.fillText(text, w / 2, h / 2 + 2, w - 40);
+    ctx.fillText(text, w / 2, h / 2 + 4);
   });
   return p;
 }

@@ -137,45 +137,45 @@ export const ARTIFACTS: Artifact[] = [
   // ---------- Ancient Egypt Arrival ----------
   {
     id: 'golden-scarab', name: 'Golden Scarab Amulet', zone: 'egypt', shape: 'scarab',
-    cutout: 'golden-scarab.png', position: [-4.0, 1.55, -2.2], color: 0x1abc9c, standHeight: 1.1, cutoutHeight: 0.75,
+    cutout: 'golden-scarab.png', position: [-3.22, 1.55, -0.9], color: 0x1abc9c, standHeight: 1.1, cutoutHeight: 1.01,
     fieldNote: 'Egyptians saw the scarab beetle rolling dung balls and linked it to the god Khepri rolling the Sun across the sky. Scarab amulets stood for rebirth.',
     quiz: { question: 'What did the scarab symbolize in ancient Egypt?', options: ['War', 'Rebirth and the rising Sun', 'Rain'], answerIndex: 1 },
   },
   {
     id: 'ankh', name: 'Ankh', zone: 'egypt', shape: 'ankh',
-    cutout: 'ankh.png', position: [4.0, 1.55, -2.2], color: 0xf1c40f, standHeight: 1.1, cutoutHeight: 0.75,
+    cutout: 'ankh.png', position: [3.22, 1.55, -0.9], color: 0xf1c40f, standHeight: 1.1, cutoutHeight: 1.01,
     fieldNote: 'The ankh is the hieroglyph for "life". Gods are often shown holding it out to pharaohs.',
     quiz: { question: 'The ankh hieroglyph means…', options: ['Life', 'Water', 'King'], answerIndex: 0 },
   },
   {
     id: 'papyrus-scroll', name: 'Papyrus Scroll', zone: 'egypt', shape: 'papyrus',
-    cutout: 'papyrus-scroll.png', position: [-3.8, 1.55, 1.6], color: 0xdcc48e, standHeight: 1.1, cutoutHeight: 0.75,
+    cutout: 'papyrus-scroll.png', position: [-3.07, 1.55, 2.16], color: 0xdcc48e, standHeight: 1.1, cutoutHeight: 1.01,
     fieldNote: 'Papyrus paper was made from reeds that grew along the Nile. Strips were laid crosswise, pressed and dried into sheets.',
     quiz: { question: 'Papyrus paper was made from…', options: ['Tree bark', 'Nile river reeds', 'Animal skin'], answerIndex: 1 },
   },
   {
     id: 'canopic-jar', name: 'Canopic Jar', zone: 'egypt', shape: 'canopic',
-    cutout: 'canopic-jar.png', position: [3.8, 1.55, 1.6], color: 0xbfa77a, standHeight: 1.1, cutoutHeight: 0.75,
+    cutout: 'canopic-jar.png', position: [3.07, 1.55, 2.16], color: 0xbfa77a, standHeight: 1.1, cutoutHeight: 1.01,
     fieldNote: 'During mummification, organs were stored in four canopic jars, each protected by one of the four Sons of Horus.',
     quiz: { question: 'How many canopic jars were usually used?', options: ['Two', 'Four', 'Ten'], answerIndex: 1 },
   },
   {
     id: 'bastet-statue', name: 'Bastet Cat Statue', zone: 'egypt', shape: 'bastet',
-    cutout: 'bastet-statue.png', position: [-5.6, 1.6, -0.3], color: 0x1c1c22, standHeight: 1.1, cutoutHeight: 1.2, static: true,
+    cutout: 'bastet-statue.png', position: [-4.51, 1.6, 0.63], color: 0x1c1c22, standHeight: 1.1, cutoutHeight: 1.62, static: true,
     inspectImage: 'inspection/egypt_bastet_statue.png',
     fieldNote: 'Bastet was an Egyptian goddess shown as a cat or a woman with a cat\'s head. She protected homes and families. Egyptians loved cats because they kept mice and snakes away from stored grain.',
     quiz: { question: 'Why did ancient Egyptians value cats so much?', options: ['They pulled carts', 'They protected grain from mice and snakes', 'They guarded the pyramids at night'], answerIndex: 1 },
   },
   {
     id: 'hieroglyphic-tablet', name: 'Hieroglyphic Tablet', zone: 'egypt', shape: 'stela',
-    cutout: 'hieroglyphic-tablet.png', position: [5.6, 1.3, -0.3], color: 0xd9b77a, standHeight: 0.6, cutoutHeight: 1.45, static: true,
+    cutout: 'hieroglyphic-tablet.png', position: [4.51, 1.3, 0.63], color: 0xd9b77a, standHeight: 0.6, cutoutHeight: 1.96, static: true,
     inspectImage: 'inspection/egypt_hieroglyphic_tablet.png',
     fieldNote: 'A carved stone slab like this is called a stela. Egyptians used stelae to honor gods and people and to record events. Hieroglyphs can run left, right or down. You read toward the faces of the people and animals.',
     quiz: { question: 'How do you know which way to read hieroglyphs?', options: ['Always right to left', 'Read toward the faces of people and animals', 'Start from the bottom'], answerIndex: 1 },
   },
   {
     id: 'nile-discovery', name: 'Nile Scroll Map', zone: 'egypt', shape: 'mapTable',
-    cutout: 'nile-discovery.png', position: [2.0, 0.9, 0.2], color: 0xe2cc93, standHeight: 0, cutoutHeight: 1.75, static: true,
+    cutout: 'nile-discovery.png', position: [3.3, 0.9, 1.0], color: 0xe2cc93, standHeight: 0, cutoutHeight: 2.36, static: true,
     inspectImage: 'inspection/egypt_nile_discovery.png',
     fieldNote: 'Every summer the Nile flooded its banks. When the water went down it left rich black mud that was perfect for farming. Egyptians called their land Kemet, the Black Land, after that soil.',
     quiz: { question: 'Why was the Nile\'s yearly flood so important?', options: ['It left rich soil for growing crops', 'It washed away the pyramids', 'It made the desert colder'], answerIndex: 0 },
@@ -184,25 +184,25 @@ export const ARTIFACTS: Artifact[] = [
   // ---------- Nile Fossil Exhibit ----------
   {
     id: 'ammonite', name: 'Ammonite Fossil', zone: 'nile', shape: 'ammonite',
-    cutout: 'ammonite.png', position: [-3, 1.4, -2.5], color: 0xc0884f, standHeight: 1.05, cutoutHeight: 0.65,
+    cutout: 'ammonite.png', position: [-2.42, 1.4, -1.14], color: 0xc0884f, standHeight: 1.05, cutoutHeight: 0.88,
     fieldNote: 'Ammonites were sea creatures with spiral shells, related to today\'s octopus and nautilus. Their fossils show that seas once covered parts of Egypt.',
     quiz: { question: 'Ammonites are related to which living animal?', options: ['Snails only', 'Octopus and nautilus', 'Crabs'], answerIndex: 1 },
   },
   {
     id: 'croc-skull', name: 'Ancient Crocodile Skull', zone: 'nile', shape: 'crocodile',
-    cutout: 'croc-skull.png', position: [3, 1.4, -2.5], color: 0xd6cbb0, standHeight: 1.05, cutoutHeight: 0.65,
+    cutout: 'croc-skull.png', position: [2.42, 1.4, -1.14], color: 0xd6cbb0, standHeight: 1.05, cutoutHeight: 0.88,
     fieldNote: 'Crocodile ancestors have lived for over 200 million years. Ancient Egyptians honored the crocodile god Sobek along the Nile.',
     quiz: { question: 'Which Egyptian god had a crocodile head?', options: ['Sobek', 'Ra', 'Anubis'], answerIndex: 0 },
   },
   {
     id: 'trilobite', name: 'Trilobite', zone: 'nile', shape: 'trilobite',
-    cutout: 'trilobite.png', position: [-3, 1.4, 2.5], color: 0x7f8c8d, standHeight: 1.05, cutoutHeight: 0.65,
+    cutout: 'trilobite.png', position: [-2.42, 1.4, 2.89], color: 0x7f8c8d, standHeight: 1.05, cutoutHeight: 0.88,
     fieldNote: 'Trilobites were among the first animals with complex eyes. They crawled on ocean floors for nearly 300 million years before going extinct.',
     quiz: { question: 'Trilobites lived…', options: ['In deserts', 'On ancient ocean floors', 'In trees'], answerIndex: 1 },
   },
   {
     id: 'whale-tooth', name: 'Basilosaurus Tooth', zone: 'nile', shape: 'tooth',
-    cutout: 'whale-tooth.png', position: [3, 1.4, 2.5], color: 0xecf0f1, standHeight: 1.05, cutoutHeight: 0.65,
+    cutout: 'whale-tooth.png', position: [2.42, 1.4, 2.89], color: 0xecf0f1, standHeight: 1.05, cutoutHeight: 0.88,
     fieldNote: 'Egypt\'s Wadi Al-Hitan ("Valley of the Whales") holds fossils of early whales like Basilosaurus that still had tiny back legs.',
     quiz: { question: 'What surprising feature did early whale Basilosaurus have?', options: ['Wings', 'Tiny back legs', 'A shell'], answerIndex: 1 },
   },
@@ -210,62 +210,62 @@ export const ARTIFACTS: Artifact[] = [
   // ---------- Nile River Voyage ----------
   {
     id: 'steering-oar', name: 'Steering Oar', zone: 'river', shape: 'oar',
-    cutout: 'steering-oar.png', position: [0, 0.8, -3.0], color: 0x8e5a2b, standHeight: 0, cutoutHeight: 1.7, static: true,
+    cutout: 'steering-oar.png', position: [0.0, 0.8, -1.55], color: 0x8e5a2b, standHeight: 0, cutoutHeight: 2.29, static: true,
     fieldNote: 'The Nile flows north to the sea, but the wind usually blows from the north. So boats raised their sails to travel south and lowered them to float north with the current. The hieroglyph for "travel south" even shows a boat with its sail up!',
     quiz: { question: 'How did boats travel SOUTH on the Nile?', options: ['They floated with the current', 'They raised their sails to catch the north wind', 'Animals pulled them from the bank'], answerIndex: 1 },
   },
   {
     id: 'nilometer', name: 'Nilometer', zone: 'river', shape: 'nilometer',
-    cutout: 'nilometer.png', position: [-2.0, 0.7, -1.4], color: 0xc9a25a, standHeight: 0, cutoutHeight: 1.35, static: true,
+    cutout: 'nilometer.png', position: [-1.61, 0.7, -0.26], color: 0xc9a25a, standHeight: 0, cutoutHeight: 1.82, static: true,
     fieldNote: 'A nilometer was a set of marks or steps carved in stone to measure how high the Nile rose each year. Too little water meant hunger; too much meant floods. Officials used it to predict the harvest and decide how much tax farmers would pay.',
     quiz: { question: 'What was a nilometer used for?', options: ['Measuring how high the Nile rose', 'Catching fish', 'Telling the time at night'], answerIndex: 0 },
   },
   {
     id: 'shaduf', name: 'Shaduf', zone: 'river', shape: 'shaduf',
-    cutout: 'shaduf.png', position: [2.1, 0.7, -1.4], color: 0x7a4f2a, standHeight: 0, cutoutHeight: 1.4, static: true,
+    cutout: 'shaduf.png', position: [1.69, 0.7, -0.26], color: 0x7a4f2a, standHeight: 0, cutoutHeight: 1.89, static: true,
     fieldNote: 'A shaduf is a long pole with a bucket on one end and a heavy weight on the other. Farmers dipped the bucket in the river and the weight helped swing the water up into canals that watered their fields, even after the flood was gone.',
     quiz: { question: 'What did farmers use a shaduf for?', options: ['Grinding wheat', 'Lifting water from the river to their fields', 'Steering boats'], answerIndex: 1 },
   },
   {
     id: 'papyrus-reeds', name: 'Papyrus Reeds', zone: 'river', shape: 'reeds',
-    cutout: 'papyrus-reeds.png', position: [-2.2, 0.5, 1.2], color: 0x6f8f3a, standHeight: 0, cutoutHeight: 1.0, static: true,
+    cutout: 'papyrus-reeds.png', position: [-1.77, 0.5, 1.83], color: 0x6f8f3a, standHeight: 0, cutoutHeight: 1.35, static: true,
     fieldNote: 'Papyrus reeds grew thick along the Nile. Egyptians tied bundles of them together to make light boats, and also used papyrus for rope, sandals, baskets, mats and paper.',
     quiz: { question: 'Which of these could Egyptians make from papyrus reeds?', options: ['Iron tools', 'Glass windows', 'Small boats and rope'], answerIndex: 2 },
   },
   {
     id: 'fishing-net', name: 'Fishing Net', zone: 'river', shape: 'net',
-    cutout: 'fishing-net.png', position: [2.2, 0.35, 1.2], color: 0xd9c08a, standHeight: 0, cutoutHeight: 0.7, static: true,
+    cutout: 'fishing-net.png', position: [1.77, 0.35, 1.83], color: 0xd9c08a, standHeight: 0, cutoutHeight: 0.94, static: true,
     fieldNote: 'Fish from the Nile were an everyday food, along with bread and vegetables. Fishermen used nets, hooks and spears from small boats. They had to watch out for hippos: hippos were among the most dangerous animals on the river!',
     quiz: { question: 'Which river animal was one of the most dangerous to Egyptian fishermen?', options: ['The hippopotamus', 'The frog', 'The duck'], answerIndex: 0 },
   },
   // ---------- Great Pyramid of Giza ----------
   {
     id: 'limestone-block', name: 'Limestone Block', zone: 'pyramid', shape: 'block',
-    cutout: 'limestone-block.png', position: [-2.6, 0.4, -1.8], color: 0xd8c39a, standHeight: 0, cutoutHeight: 0.85, static: true,
+    cutout: 'limestone-block.png', position: [-2.09, 0.4, -0.58], color: 0xd8c39a, standHeight: 0, cutoutHeight: 1.15, static: true,
     fieldNote: 'The Great Pyramid is made of about 2.3 million stone blocks. On average each one weighs around 2.5 tonnes, as much as a big car, and some granite blocks inside weigh far more.',
     quiz: { question: 'About how many stone blocks make up the Great Pyramid?', options: ['About 2,300', 'About 2.3 million', 'About 23'], answerIndex: 1 },
   },
   {
     id: 'copper-chisel', name: 'Copper Chisel', zone: 'pyramid', shape: 'chisel',
-    cutout: 'copper-chisel.png', position: [2.6, 1.45, -1.8], color: 0xb87333, standHeight: 1.1, cutoutHeight: 0.6,
+    cutout: 'copper-chisel.png', position: [2.09, 1.45, -0.58], color: 0xb87333, standHeight: 1.1, cutoutHeight: 0.81,
     fieldNote: 'Workers shaped stone with copper chisels, stone hammers and wooden sledges. Archaeologists found the village where pyramid builders lived and the tombs where they were buried. They were organised, paid workers fed with bread and beer, not slaves.',
     quiz: { question: 'Who built the Great Pyramid?', options: ['Organised teams of paid workers', 'Aliens', 'A single pharaoh by himself'], answerIndex: 0 },
   },
   {
     id: 'cubit-rod', name: 'Cubit Rod', zone: 'pyramid', shape: 'cubit',
-    cutout: 'cubit-rod.png', position: [-2.8, 1.4, 1.2], color: 0x8e5a2b, standHeight: 1.1, cutoutHeight: 0.4,
+    cutout: 'cubit-rod.png', position: [-2.26, 1.4, 1.83], color: 0x8e5a2b, standHeight: 1.1, cutoutHeight: 0.54,
     fieldNote: 'Egyptian builders measured with a cubit rod, about the length from elbow to fingertip (roughly 52 cm). They were so precise that the pyramid\'s four sides face almost exactly north, south, east and west.',
     quiz: { question: 'Which directions do the Great Pyramid\'s sides face?', options: ['They point in random directions', 'Toward the Nile only', 'Almost exactly north, south, east and west'], answerIndex: 2 },
   },
   {
     id: 'casing-stone', name: 'White Casing Stone', zone: 'pyramid', shape: 'block',
-    cutout: 'casing-stone.png', position: [2.8, 1.35, 1.2], color: 0xf4efe2, standHeight: 1.1,
+    cutout: 'casing-stone.png', position: [2.26, 1.35, 1.83], color: 0xf4efe2, standHeight: 1.1,
     fieldNote: 'When it was new, the pyramid was covered in smooth, polished white limestone casing stones that gleamed in the sun. Most were taken away long ago to build other things, which is why it looks stepped and rough today.',
     quiz: { question: 'What did the Great Pyramid look like when it was new?', options: ['Painted bright red', 'Covered in smooth, shining white limestone', 'Covered in grass'], answerIndex: 1 },
   },
   {
     id: 'pyramidion', name: 'Pyramidion Capstone', zone: 'pyramid', shape: 'pyramidion',
-    cutout: 'pyramidion.png', position: [0, 1.35, -3.4], color: 0xd4af37, standHeight: 1.1,
+    cutout: 'pyramidion.png', position: [0.0, 1.35, -1.87], color: 0xd4af37, standHeight: 1.1,
     fieldNote: 'At about 146 metres (481 feet) tall, the Great Pyramid was the tallest building made by people for around 3,800 years. It is the oldest of the Seven Wonders of the Ancient World, and the only one still standing.',
     quiz: { question: 'Which of the Seven Wonders of the Ancient World is still standing?', options: ['The Great Pyramid of Giza', 'The Colossus of Rhodes', 'The Hanging Gardens of Babylon'], answerIndex: 0 },
   },
@@ -288,7 +288,7 @@ export const INFO_POINTS: InfoPoint[] = [
   {
     id: 'egypt-welcome', zone: 'egypt', kind: 'sign', title: 'Welcome, Time Explorer!',
     body: 'You\'ve traveled to Ancient Egypt, about 1500 BCE. Find the glowing artifacts, answer their questions and fill your backpack. Look for the Bastet statue, the hieroglyphic tablet and the scroll map by the Nile.',
-    image: 'inspection/egypt_welcome_sign.png', signImage: 'props/egypt-welcome-sign.png', position: [-2.0, 0, 0.9],
+    image: 'inspection/egypt_welcome_sign.png', signImage: 'props/egypt-welcome-sign.png', position: [-2.4, 0, 3.3],
   },
   {
     id: 'egypt-guide', zone: 'egypt', kind: 'poster', title: 'Ancient Egypt Field Guide',
@@ -336,13 +336,13 @@ export const propsInZone = (zone: ZoneId) => PROPS.filter((p) => p.zone === zone
 INFO_POINTS.push({
   id: 'river-welcome', zone: 'river', kind: 'sign', title: 'Welcome Aboard!',
   body: 'You are sailing on the Nile, one of the longest rivers in the world: about 6,650 km (4,130 miles). Almost everyone in Ancient Egypt lived close to its banks, because the land beyond was desert. Here is a twist: Upper Egypt is in the SOUTH and Lower Egypt is in the NORTH, because the Nile flows from south to north. Find the five glowing objects on deck to learn more!',
-  position: [-1.5, 0, 2.6],
+  position: [-2.3, 0, 3.4],
 });
 
 INFO_POINTS.push({
   id: 'pyramid-welcome', zone: 'pyramid', kind: 'sign', title: 'The Great Pyramid',
   body: 'Welcome to the Great Pyramid of Giza, built as a tomb for Pharaoh Khufu around 2560 BCE. Here is something amazing: by 1500 BCE, when the rest of this adventure takes place, the pyramid was already about 1,000 years old! Even Ancient Egyptians thought of it as ancient. Find the five glowing objects to learn how it was built.',
-  position: [-1.5, 0, 2.6],
+  position: [-2.3, 0, 3.4],
 });
 
 export const infoPointsInZone = (zone: ZoneId) => INFO_POINTS.filter((p) => p.zone === zone);

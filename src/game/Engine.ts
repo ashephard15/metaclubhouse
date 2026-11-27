@@ -1,5 +1,9 @@
 import * as THREE from 'three';
 import { VRButton } from 'three/examples/jsm/webxr/VRButton.js';
+import { GroundedSkybox } from 'three/examples/jsm/objects/GroundedSkybox.js';
+
+/** Camera height the panoramas were painted from (metres). */
+const EYE_HEIGHT = 1.6;
 import { XRControllerModelFactory } from 'three/examples/jsm/webxr/XRControllerModelFactory.js';
 import { XRHandModelFactory } from 'three/examples/jsm/webxr/XRHandModelFactory.js';
 import { ARTIFACTS, ZONES, artifactsInZone, infoPointsInZone, propsInZone, type Artifact, type InfoPoint, type ZoneId } from '../data/artifacts';
@@ -247,34 +251,32 @@ export class Engine {
    * The 3D floor and all interactive objects sit inside it, so WebXR depth and movement are preserved.
    */
   private setPanorama(path: string | undefined, yawDeg: number) {
-    if (!path) { if (this.panoSphere) this.panoSphere.visible = false; return; }
-    if (!this.panoSphere) {
-      const geo = new THREE.SphereGeometry(40, 64, 32);
-      geo.scale(-1, 1, 1);
-      this.panoSphere = new THREE.Mesh(geo, new THREE.MeshBasicMaterial({ fog: false, toneMapped: false, depthWrite: false }));
-      this.panoSphere.renderOrder = -1;
-      this.panoSphere.position.set(SPAWN.x, 1.6, SPAWN.z);
-      this.scene.add(this.panoSphere);
-    }
-    const sphere = this.panoSphere;
-    // Equirect centre (u = 0.5) lands on -x for an inverted sphere; turn it to face -z (toward the portals).
-    sphere.rotation.y = -Math.PI / 2 + THREE.MathUtils.degToRad(yawDeg);
+    if (this.panoSphere) { this.panoSphere.visible = false; }
+    if (!path) return;
     const apply = (tex: THREE.Texture) => {
-      (sphere.material as THREE.MeshBasicMaterial).map = tex;
-      (sphere.material as THREE.MeshBasicMaterial).needsUpdate = true;
-      sphere.visible = true;
+      if (ZONES[this.state.zone].panorama !== path) return;
+      // Ground-projected backdrop: the painted floor is laid on the real floor plane,
+      // so objects placed in the world stand on it instead of floating in front of it.
+      if (this.panoSphere) { this.scene.remove(this.panoSphere); this.panoSphere.geometry.dispose(); (this.panoSphere.material as THREE.Material).dispose(); }
+      const sky = new GroundedSkybox(tex, EYE_HEIGHT, 60, 96);
+      (sky.material as THREE.MeshBasicMaterial).toneMapped = false;
+      (sky.material as THREE.MeshBasicMaterial).fog = false;
+      sky.renderOrder = -1;
+      sky.position.set(SPAWN.x, EYE_HEIGHT - 0.01, SPAWN.z);
+      sky.rotation.y = Math.PI / 2 + THREE.MathUtils.degToRad(yawDeg);
+      this.panoSphere = sky;
+      this.scene.add(sky);
     };
-    sphere.visible = false;
     const cached = this.panoTextures.get(path);
     if (cached) { apply(cached); return; }
     this.textureLoader.load(`${BASE}assets/${path}`, (tex) => {
       tex.colorSpace = THREE.SRGBColorSpace;
       tex.anisotropy = 8;
-      tex.generateMipmaps = true;
       this.panoTextures.set(path, tex);
-      if (ZONES[this.state.zone].panorama === path) apply(tex);
+      apply(tex);
     });
   }
+
 
   private blobTex: THREE.Texture | null = null;
 
@@ -326,6 +328,7 @@ export class Engine {
     node.position.set(...a.position);
     if (a.static) node.lookAt(SPAWN.x, a.position[1], SPAWN.z);
     const model = buildArtifactModel(a.shape, a.color);
+    if (a.zone !== 'treehouse') model.scale.setScalar(1.8); // stand-in models read too small next to the painted scenery
     node.add(model);
     node.userData.artifact = a;
 
@@ -384,7 +387,7 @@ export class Engine {
     ring.position.set(a.position[0], onTable ? 0.815 : standH + 0.02, a.position[2]);
     if (onTable) ring.scale.setScalar(0.65);
 
-    const label = makeLabel(a.name, 0.8);
+    const label = makeLabel(a.name, 0.85);
     const picH = a.cutoutHeight ?? 0.45;
     label.mesh.position.set(0, a.static ? standH + picH - a.position[1] + 0.15 : Math.max(box.max.y, picH / 2) + 0.12, 0);
     label.mesh.userData.billboard = true;
@@ -512,7 +515,7 @@ export class Engine {
       const glow = new THREE.PointLight(0xc9a0ff, 1.5, 2.2);
       glow.position.set(0, 1.3, -0.5);
       node.add(glow);
-      const tag = makeLabel('Mission Jar', 0.6);
+      const tag = makeLabel('Mission Jar', 0.9);
       tag.mesh.position.set(0, 2.0, -0.5);
       tag.mesh.userData.billboard = true;
       this.labels.push(tag);
