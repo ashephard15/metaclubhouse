@@ -27,6 +27,8 @@ export interface Artifact {
   standHeight?: number;
   /** Height in metres of the cutout picture in the world (default 0.45). */
   cutoutHeight?: number;
+  /** Lies flat on the table (e.g. an unrolled map). cutoutHeight is then its width. */
+  lieFlat?: boolean;
   /** Large set-piece discoveries stay still instead of spinning/bobbing. */
   static?: boolean;
   fieldNote: string;
@@ -57,7 +59,7 @@ export const ZONES: Record<ZoneId, Zone> = {
     ground: 0x4f7a3a,
     fog: 0xa8d4ec,
     reference: 'references/treehouse_hub_reference.png',
-    panorama: 'panoramas/treehouse_hub_360.jpg',
+    panorama: 'panoramas/treehouse_hub_360.png',
     panoramaYaw: 0, // painted portal faces the game's portals
   },
   egypt: {
@@ -68,14 +70,14 @@ export const ZONES: Record<ZoneId, Zone> = {
     ground: 0xd9b26f,
     fog: 0xf5d39a,
     reference: 'references/egypt_arrival_reference.png',
-    panorama: 'panoramas/egypt_marketplace_portal_360.jpg',
+    panorama: 'panoramas/egypt_marketplace_portal_360.png',
     panoramaYaw: 0,
   },
   nile: {
     id: 'nile',
     name: 'Nile Fossil Exhibit',
     subtitle: 'Ancient life along the river',
-    panorama: 'panoramas/nile_fossil_marketplace_360.jpg',
+    panorama: 'panoramas/nile_fossil_marketplace_360.png',
     panoramaYaw: 0,
     sky: 0x2c3e50,
     ground: 0x6b5a45,
@@ -87,25 +89,25 @@ export const ARTIFACTS: Artifact[] = [
   // ---------- Tree House Hub ----------
   {
     id: 'explorer-compass', name: "Explorer's Compass", zone: 'treehouse', shape: 'compass',
-    cutout: 'explorer-compass.png', position: [0.17, 1.0, 1.49], color: 0xc9a227, standHeight: 0,
+    cutout: 'explorer-compass.png', position: [-0.1, 1.03, 1.25], color: 0xc9a227, standHeight: 0, cutoutHeight: 0.45,
     fieldNote: 'A compass needle is a tiny magnet. It lines up with Earth\'s magnetic field and points toward magnetic north, helping explorers find their way.',
     quiz: { question: 'Why does a compass needle point north?', options: ['It is pulled by the Sun', 'It is a magnet lining up with Earth\'s magnetic field', 'Wind pushes it'], answerIndex: 1 },
   },
   {
     id: 'time-map', name: 'Time Map', zone: 'treehouse', shape: 'map',
-    cutout: 'time-map.png', position: [0.4, 1.0, 2.23], color: 0xe8d5a3, standHeight: 0,
+    cutout: 'time-map.png', position: [0.42, 0.82, 2.24], color: 0xe8d5a3, standHeight: 0, cutoutHeight: 0.75, lieFlat: true,
     fieldNote: 'Maps use a scale, a legend and a compass rose. Our Time Map adds one more thing: when each place existed in history.',
     quiz: { question: 'What part of a map explains its symbols?', options: ['The legend', 'The border', 'The title'], answerIndex: 0 },
   },
   {
     id: 'oil-lantern', name: 'Oil Lantern', zone: 'treehouse', shape: 'lantern',
-    cutout: 'oil-lantern.png', position: [-0.16, 1.0, 1.7], color: 0xff9f43, standHeight: 0,
+    cutout: 'oil-lantern.png', position: [-0.59, 1.1, 1.49], color: 0xff9f43, standHeight: 0, cutoutHeight: 0.6,
     fieldNote: 'Before electric lights, lanterns burned oil through a cloth wick. Glass sides kept the flame safe from wind.',
     quiz: { question: 'What did old lanterns burn to make light?', options: ['Batteries', 'Oil soaked into a wick', 'Ice'], answerIndex: 1 },
   },
   {
     id: 'field-journal', name: 'Field Journal', zone: 'treehouse', shape: 'journal',
-    cutout: 'field-journal.png', position: [0.9, 1.0, 1.8], color: 0x8e5a2b, standHeight: 0,
+    cutout: 'field-journal.png', position: [1.35, 1.08, 1.71], color: 0x8e5a2b, standHeight: 0, cutoutHeight: 0.55,
     fieldNote: 'Scientists record observations in field journals: drawings, measurements, dates and questions. Good notes let others check your discoveries.',
     quiz: { question: 'Why do explorers keep field journals?', options: ['To record observations others can check', 'To press flowers only', 'To keep secrets from scientists'], answerIndex: 0 },
   },
@@ -211,7 +213,7 @@ export const INFO_POINTS: InfoPoint[] = [
 INFO_POINTS.push({
   id: 'mission-jar', zone: 'treehouse', kind: 'jar', title: 'Mission Jar',
   body: 'Your missions, Time Explorer: 1) Collect the 4 explorer tools here in the Clubhouse. 2) Travel to Ancient Egypt and find 7 artifacts, including the Bastet statue, the hieroglyphic tablet and the Nile scroll map. 3) Visit the Nile Fossil Exhibit and find 4 fossils. Answer each question to fill your backpack!',
-  position: [0.38, 0, 1.83],
+  position: [0.4, 0, 1.63],
 });
 
 /** Decorative cut-out props (transparent PNGs in public/assets/props/). Heights in metres. */
@@ -228,11 +230,11 @@ export interface Prop {
 
 export const PROPS: Prop[] = [
   // Clubhouse: exactly the concept picture's centre (rug, round table, four stumps). Everything else is painted in the room.
-  { zone: 'treehouse', image: 'compass-rug', position: [0.38, 0.012, 1.83], height: 3.6, flat: true },
-  { zone: 'treehouse', image: 'tree-stump', position: [-0.58, 0, 2.55], height: 0.62 },
-  { zone: 'treehouse', image: 'tree-stump', position: [1.1, 0, 2.79], height: 0.62 },
-  { zone: 'treehouse', image: 'tree-stump', position: [-0.75, 0, 1.21], height: 0.62 },
-  { zone: 'treehouse', image: 'tree-stump', position: [1.63, 0, 1.55], height: 0.62 },
+  { zone: 'treehouse', image: 'compass-rug', position: [0.4, 0.012, 1.63], height: 4.6, flat: true },
+  { zone: 'treehouse', image: 'tree-stump', position: [-0.76, 0, 2.73], height: 0.7 },
+  { zone: 'treehouse', image: 'tree-stump', position: [1.22, 0, 3.01], height: 0.7 },
+  { zone: 'treehouse', image: 'tree-stump', position: [-1.13, 0, 1.06], height: 0.7 },
+  { zone: 'treehouse', image: 'tree-stump', position: [2.04, 0, 1.5], height: 0.7 },
   // Nile
   { zone: 'nile', image: 'dig-basket', position: [-4.4, 0, 0.6], height: 0.65 },
   { zone: 'nile', image: 'potted-plant', position: [5.2, 0, 0.2], height: 1.1 },

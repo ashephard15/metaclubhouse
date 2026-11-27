@@ -342,7 +342,13 @@ export class Engine {
           new THREE.PlaneGeometry(w, h),
           new THREE.MeshBasicMaterial({ map: tex, transparent: true, alphaTest: 0.05, side: THREE.DoubleSide }),
         );
-        plane.userData.billboard = true;
+        plane.userData.billboard = !a.lieFlat;
+        if (a.lieFlat) {
+          plane.geometry.dispose();
+          plane.geometry = new THREE.PlaneGeometry(h, (h * img.height) / img.width);
+          plane.rotation.x = -Math.PI / 2;
+          plane.userData.noSpin = true;
+        }
         // Set pieces stand on their stand (or the ground) instead of floating
         if (a.static) plane.position.y = (a.standHeight ?? 0.75) + h / 2 - a.position[1];
         node.remove(model);
@@ -375,7 +381,7 @@ export class Engine {
       new THREE.MeshBasicMaterial({ color: 0xf7c95c }),
     );
     ring.rotation.x = Math.PI / 2;
-    ring.position.set(a.position[0], onTable ? 0.79 : standH + 0.02, a.position[2]);
+    ring.position.set(a.position[0], onTable ? 0.815 : standH + 0.02, a.position[2]);
     if (onTable) ring.scale.setScalar(0.65);
 
     const label = makeLabel(a.name, 0.8);
@@ -494,24 +500,24 @@ export class Engine {
     let face: THREE.Mesh;
     if (p.kind === 'jar') {
       // Round table in the middle of the room; the Mission Jar stands raised in its centre
-      node.add(roundTable(1.1, 0.78));
-      const riser = new THREE.Mesh(new THREE.CylinderGeometry(0.24, 0.27, 0.16, 24), std(0x8e5a2b, { roughness: 0.9 }));
-      riser.position.set(0, 0.86, -0.4);
+      node.add(roundTable(1.35, 0.8));
+      const riser = new THREE.Mesh(new THREE.CylinderGeometry(0.32, 0.36, 0.16, 24), std(0x8e5a2b, { roughness: 0.9 }));
+      riser.position.set(0, 0.88, -0.5);
       riser.castShadow = true;
       node.add(riser);
-      const jar = this.sprite('props/mission-jar.png', 0.6, { billboard: true });
-      jar.position.set(0, 0.94, -0.4);
+      const jar = this.sprite('props/mission-jar.png', 0.85, { billboard: true });
+      jar.position.set(0, 0.96, -0.5);
       node.add(jar);
       const glow = new THREE.PointLight(0xc9a0ff, 1.5, 2.2);
-      glow.position.set(0, 1.2, -0.4);
+      glow.position.set(0, 1.3, -0.5);
       node.add(glow);
       const tag = makeLabel('Mission Jar', 0.6);
-      tag.mesh.position.set(0, 1.68, -0.4);
+      tag.mesh.position.set(0, 2.0, -0.5);
       tag.mesh.userData.billboard = true;
       this.labels.push(tag);
       node.add(tag.mesh);
-      face = new THREE.Mesh(new THREE.CylinderGeometry(0.28, 0.28, 0.65, 12), new THREE.MeshBasicMaterial({ visible: false }));
-      face.position.set(0, 1.25, -0.4);
+      face = new THREE.Mesh(new THREE.CylinderGeometry(0.35, 0.35, 0.9, 12), new THREE.MeshBasicMaterial({ visible: false }));
+      face.position.set(0, 1.4, -0.5);
     } else if (p.kind === 'board') {
       // How to Play: the sign picture hanging between two wooden posts
       const wood = std(0x6b4423, { roughness: 0.95 });
@@ -859,8 +865,8 @@ export class Engine {
     for (const n of this.artifactNodes) {
       n.node.position.y = n.baseY + Math.sin(t * 1.6 + n.baseY * 5) * 0.04;
       const model = n.node.children[0];
-      if (n.artifact.static) { n.node.position.y = n.baseY; }
-      else if (model && !model.userData.billboard) model.rotation.y = t * 0.6;
+      if (n.artifact.static || n.artifact.lieFlat) { n.node.position.y = n.baseY; }
+      else if (model && !model.userData.billboard && !model.userData.noSpin) model.rotation.y = t * 0.6;
       n.ring.scale.setScalar(1 + Math.sin(t * 3) * 0.05);
     }
     for (const p of this.portalNodes) p.swirl.rotation.z = -t * 1.2;
